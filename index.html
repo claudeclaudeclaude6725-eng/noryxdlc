@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NoryxDLC — Лучший мод для Minecraft</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+<div id="bgFull"></div>
+<div id="bgOverlay"></div>
+<canvas id="bgCanvas"></canvas>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<nav class="dynamic-island">
+  <a href="/" class="di-logo">
+    <img src="public/assets/logo.png" alt="Logo" onerror="this.style.display='none'">
+    <span class="di-logo-text">NoryxDLC</span>
+  </a>
+  <div class="di-sep"></div>
+  <div class="di-nav">
+    <a href="#advantages">Преимущества</a>
+    <a href="#tariffs">Товары</a>
+  </div>
+  <div id="header-auth">
+    <a href="/html/login.html" class="di-login">Войти</a>
+  </div>
+</nav>
+
+<div class="content">
+
+<header id="site-header"></header>
+
+<section class="hero">
+  <div class="hero-inner">
+    <h1 class="fade-in">Лучший мод для комфортной игры в Minecraft</h1>
+    <p class="fade-in" style="transition-delay:0.2s">NoryxDLC создан для тех, кто ценит стиль, удобство и максимальную производительность. Плавный геймплей, продуманный интерфейс и стабильная работа дают вам реальное превосходство в игре.</p>
+    <div class="hero-buttons fade-in" style="transition-delay:0.4s">
+      <a href="/html/login.html" class="btn-primary">Войти</a>
+      <a href="/html/register.html" class="btn-secondary">Регистрация</a>
+    </div>
+  </div>
+</section>
+
+<section class="advantages" id="advantages">
+  <div class="text-center" style="margin-bottom:64px">
+    <h2 class="section-title fade-in">Преимущества нашего мода</h2>
+    <p class="section-subtitle fade-in" style="transition-delay:0.15s">Всё, что вам нужно для доминирования и комфортной игры на серверах.</p>
+  </div>
+  <div class="advantages-grid">
+    <div class="glass-card advantage-card fade-in">
+      <div class="advantage-icon">
+        <img src="public/assets/pickaxe.png" alt="Производительность">
+      </div>
+      <h3>Производительность</h3>
+      <p>Оптимизированный код позволяет достичь высокого FPS даже на слабых компьютерах.</p>
+    </div>
+    <div class="glass-card advantage-card fade-in" style="transition-delay:0.15s">
+      <div class="advantage-icon">
+        <img src="public/assets/fly.png" alt="PvP Преимущество">
+      </div>
+      <h3>PvP Преимущество</h3>
+      <p>Получите преимущество в бою с помощью специальных настроек и функций для PvP.</p>
+    </div>
+    <div class="glass-card advantage-card fade-in" style="transition-delay:0.3s">
+      <div class="advantage-icon">
+        <img src="public/assets/firework.png" alt="Дизайн">
+      </div>
+      <h3>Дизайн</h3>
+      <p>Наслаждайтесь игрой с элегантным минималистичным интерфейсом.</p>
+    </div>
+  </div>
+</section>
+
+<section class="tariffs" id="tariffs">
+  <div class="text-center" style="margin-bottom:64px">
+    <h2 class="section-title fade-in">Товары</h2>
+    <p class="section-subtitle fade-in" style="transition-delay:0.15s">Выберите подходящий вариант для себя.</p>
+  </div>
+  <div class="tariffs-grid">
+
+    <div class="tariff-category fade-in">
+      <h3 class="tariff-category-title beta">BETA</h3>
+      <div class="tariff-items">
+        <div class="tariff-item" onclick="openGlobalModal('BETA — 7 дней','7 дней','45')">
+          <span class="tariff-item-name">7 Дней</span>
+          <span class="tariff-item-price beta-price">45₽</span>
+        </div>
+        <div class="tariff-item" onclick="openGlobalModal('BETA — 30 дней','30 дней','90')">
+          <span class="tariff-item-name">30 Дней</span>
+          <span class="tariff-item-price beta-price">90₽</span>
+        </div>
+        <div class="tariff-item" onclick="openGlobalModal('BETA — 90 дней','90 дней','180')">
+          <span class="tariff-item-name">90 Дней</span>
+          <span class="tariff-item-price beta-price">180₽</span>
+        </div>
+        <div class="tariff-item" onclick="openGlobalModal('BETA — 180 дней','180 дней','230')">
+          <span class="tariff-item-name">180 Дней</span>
+          <span class="tariff-item-price beta-price">230₽</span>
+        </div>
+        <div class="tariff-item lifetime" onclick="openGlobalModal('BETA — LIFETIME','Навсегда','300')">
+          <span class="tariff-item-name">LIFETIME</span>
+          <span class="tariff-item-price beta-price">300₽</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tariff-category fade-in" style="transition-delay:0.15s">
+      <h3 class="tariff-category-title alpha">Alpha</h3>
+      <div class="tariff-items">
+        <div class="tariff-item" onclick="openGlobalModal('Alpha — 7 дней','7 дней','80')">
+          <span class="tariff-item-name">7 Дней</span>
+          <span class="tariff-item-price alpha-price">80₽</span>
+        </div>
+        <div class="tariff-item" onclick="openGlobalModal('Alpha — 30 дней','30 дней','140')">
+          <span class="tariff-item-name">30 Дней</span>
+          <span class="tariff-item-price alpha-price">140₽</span>
+        </div>
+        <div class="tariff-item" onclick="openGlobalModal('Alpha — 90 дней','90 дней','220')">
+          <span class="tariff-item-name">90 Дней</span>
+          <span class="tariff-item-price alpha-price">220₽</span>
+        </div>
+        <div class="tariff-item" onclick="openGlobalModal('Alpha — 180 дней','180 дней','300')">
+          <span class="tariff-item-name">180 Дней</span>
+          <span class="tariff-item-price alpha-price">300₽</span>
+        </div>
+        <div class="tariff-item lifetime" onclick="openGlobalModal('Alpha — LIFETIME','Навсегда','350')">
+          <span class="tariff-item-name">LIFETIME</span>
+          <span class="tariff-item-price alpha-price">350₽</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tariff-category fade-in" style="transition-delay:0.3s">
+      <h3 class="tariff-category-title other">Другое</h3>
+      <div class="tariff-items">
+        <div class="tariff-item" onclick="openGlobalModal('Сброс HWID','Требует подписки','75')">
+          <div>
+            <div class="tariff-item-name">Сброс HWID</div>
+            <div class="tariff-item-sub">если есть подписка</div>
+          </div>
+          <span class="tariff-item-price other-price">75₽</span>
+        </div>
+        <div class="tariff-item" onclick="openGlobalModal('Докупить Alpha','Только при BETA LIFE','50')">
+          <div>
+            <div class="tariff-item-name">Докупить Alpha</div>
+            <div class="tariff-item-sub">если бета навсегда</div>
+          </div>
+          <span class="tariff-item-price other-price">50₽</span>
+        </div>
+        <div class="tariff-item" onclick="openGlobalModal('Префикс','Навсегда','50')">
+          <div>
+            <div class="tariff-item-name">Префикс</div>
+            <div class="tariff-item-sub">навсегда</div>
+          </div>
+          <span class="tariff-item-price other-price">50₽</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="play-section" id="play">
+  <h2 class="fade-in">Играй по-своему</h2>
+  <p class="fade-in" style="transition-delay:0.15s">Выбирай: сочный HD-дизайн клиента или мрачная классика Minecraft. Решение <strong style="color:#fff">за тобой</strong> — всегда.</p>
+</section>
+
+<section class="clickgui-section">
+  <div class="clickgui-container fade-in">
+    <img src="public/assets/client-preview.png" alt="Client Preview" class="clickgui-preview-img">
+  </div>
+</section>
+
+<footer>
+  <p>© NoryxDLC made by illusiononce with love</p>
+</footer>
+
+</div>
+
+<div class="modal-overlay hidden" id="global-shop-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeGlobalModal()">✕</button>
+    <h2>Оформление заказа</h2>
+    <div class="modal-body">
+      <div class="modal-left">
+        <h3 id="gm-name" style="font-size:20px;font-weight:700;margin-bottom:4px"></h3>
+        <p id="gm-sub" style="color:rgba(255,255,255,0.4);font-size:14px;margin-bottom:24px"></p>
+        <div class="modal-row">
+          <span style="color:rgba(255,255,255,0.5)">Итог</span>
+          <span style="color:var(--success);font-weight:700" id="gm-price"></span>
+        </div>
+        <div id="gm-discount" style="display:none;color:var(--success);font-size:14px;margin-top:8px"></div>
+        <div class="promo-row" style="margin-top:20px">
+          <input class="input-field" id="gm-promo-input" placeholder="Промокод" style="flex:1"/>
+          <button class="btn-secondary" onclick="applyPromoGlobal()">Применить</button>
+        </div>
+        <p id="gm-promo-msg" style="font-size:13px;margin-top:8px;display:none"></p>
+      </div>
+      <div class="modal-right">
+        <h3 style="font-size:15px;font-weight:500;margin-bottom:16px;color:rgba(255,255,255,0.5)">Способ оплаты</h3>
+        <div class="payment-option">
+          <input type="radio" name="gm-pay" checked style="accent-color:var(--primary)"/>
+          <span style="font-weight:600">FunPay</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeGlobalModal()">Отмена</button>
+      <a href="https://funpay.com/users/17266340/" target="_blank" class="btn-primary" id="gm-pay-btn" onclick="closeGlobalModal()">Оплатить</a>
+    </div>
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+<script>
+document.getElementById('global-shop-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeGlobalModal();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeGlobalModal();
+});
+</script>
+</body>
+</html>
