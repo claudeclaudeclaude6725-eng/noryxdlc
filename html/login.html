@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Вход — NoryxDLC</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div id="bgFull"></div>
+<div id="bgOverlay"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="content">
+<div class="auth-page">
+  <div class="auth-card slide-in">
+    <div class="auth-logo">
+      <img src="../public/assets/logo.png" alt="Logo" class="auth-logo-img" onerror="this.style.display='none'">
+      <span class="auth-logo-text">NoryxDLC</span>
+    </div>
+
+    <div class="auth-layout">
+      <div class="auth-layout-left">
+        <img src="../public/assets/login.png" alt="Login" class="auth-img" onerror="this.style.display='none'">
+      </div>
+      <div class="auth-layout-right">
+        <h2>Добро пожаловать</h2>
+        <p class="auth-sub">Войдите в свой аккаунт NoryxDLC</p>
+        <div class="auth-form" id="login-form">
+          <input type="text" class="input-field" id="login-identifier" placeholder="Почта или логин" autocomplete="username" />
+          <input type="password" class="input-field" id="login-password" placeholder="Пароль" autocomplete="current-password" />
+          <p class="auth-error" id="login-error" style="display:none"></p>
+          <button class="btn-primary w-full" onclick="doLogin()">Войти</button>
+        </div>
+        <div class="auth-footer">
+          Нет аккаунта? <a href="/html/register.html">Зарегистрироваться</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+<script src="../js/auth.js"></script>
+</body>
+</html>

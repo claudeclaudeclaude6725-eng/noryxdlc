@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Регистрация — NoryxDLC</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card card slide-in">
+    <div class="auth-logo">
+      <img src="../public/assets/logo.png" alt="Logo" style="width:32px;height:32px;border-radius:6px" onerror="this.style.display='none'">
+      <span class="auth-logo-tilde">~</span>
+      <span class="auth-logo-text">NoryxDLC</span>
+    </div>
+    <img src="../public/assets/login.png" alt="Register" class="auth-img" onerror="this.style.display='none'">
+    <h2>Создать аккаунт</h2>
+    <p class="auth-sub">Присоединяйтесь к NoryxDLC</p>
+    <div class="auth-form" id="register-form">
+      <input type="text" class="input-field" id="reg-username" placeholder="Имя пользователя" />
+      <input type="email" class="input-field" id="reg-email" placeholder="Email" />
+      <input type="password" class="input-field" id="reg-password" placeholder="Пароль" />
+      <p class="auth-error" id="reg-error" style="display:none"></p>
+      <button class="btn-primary w-full" onclick="doRegister()">Зарегистрироваться</button>
+    </div>
+    <div class="auth-footer">
+      Уже есть аккаунт? <a href="/html/login.html">Войти</a>
+    </div>
+  </div>
+</div>
+<script src="../js/auth.js"></script>
+</body>
+</html>
