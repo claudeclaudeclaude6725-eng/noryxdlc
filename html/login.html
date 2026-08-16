@@ -13,36 +13,126 @@
 <div class="orb orb-1"></div>
 <div class="orb orb-2"></div>
 
-<div class="content">
 <div class="auth-page">
-  <div class="auth-card slide-in">
+  <div class="auth-card">
+
     <div class="auth-logo">
       <img src="../public/assets/logo.png" alt="Logo" class="auth-logo-img" onerror="this.style.display='none'">
       <span class="auth-logo-text">NoryxDLC</span>
     </div>
 
-    <div class="auth-layout">
-      <div class="auth-layout-left">
-        <img src="../public/assets/login.png" alt="Login" class="auth-img" onerror="this.style.display='none'">
+    <h1 class="auth-heading">Добро пожаловать</h1>
+    <p class="auth-sub">Войдите, чтобы продолжить</p>
+
+    <div class="field-group">
+      <div class="field-wrap">
+        <label class="field-label" for="login-identifier">Почта или логин</label>
+        <input
+          type="text"
+          class="input-field"
+          id="login-identifier"
+          placeholder="example@mail.com"
+          autocomplete="username"
+        />
+        <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
       </div>
-      <div class="auth-layout-right">
-        <h2>Добро пожаловать</h2>
-        <p class="auth-sub">Войдите в свой аккаунт NoryxDLC</p>
-        <div class="auth-form" id="login-form">
-          <input type="text" class="input-field" id="login-identifier" placeholder="Почта или логин" autocomplete="username" />
-          <input type="password" class="input-field" id="login-password" placeholder="Пароль" autocomplete="current-password" />
-          <p class="auth-error" id="login-error" style="display:none"></p>
-          <button class="btn-primary w-full" onclick="doLogin()">Войти</button>
-        </div>
-        <div class="auth-footer">
-          Нет аккаунта? <a href="/html/register.html">Зарегистрироваться</a>
-        </div>
+
+      <div class="field-wrap">
+        <label class="field-label" for="login-password">Пароль</label>
+        <input
+          type="password"
+          class="input-field"
+          id="login-password"
+          placeholder="••••••••"
+          autocomplete="current-password"
+        />
+        <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <button class="password-toggle" type="button" id="toggle-password" aria-label="Показать пароль">
+          <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
       </div>
+    </div>
+
+    <div class="auth-error" id="login-error">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span id="login-error-text"></span>
+    </div>
+
+    <button class="btn-auth" id="login-btn" onclick="doLoginNew()">
+      <span class="btn-text">Войти</span>
+      <span class="btn-spinner"></span>
+    </button>
+
+    <div class="auth-divider"><span>или</span></div>
+
+    <div class="auth-footer">
+      Нет аккаунта? <a href="/html/register.html">Зарегистрироваться</a>
     </div>
 
   </div>
 </div>
-</div>
+
 <script src="../js/auth.js"></script>
+<script>
+  document.getElementById('toggle-password').addEventListener('click', function() {
+    var inp = document.getElementById('login-password');
+    var isPass = inp.type === 'password';
+    inp.type = isPass ? 'text' : 'password';
+    document.getElementById('eye-icon').innerHTML = isPass
+      ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+      : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  });
+
+  function showAuthError(msg) {
+    var el = document.getElementById('login-error');
+    document.getElementById('login-error-text').textContent = msg;
+    el.classList.add('visible');
+  }
+  function hideAuthError() {
+    document.getElementById('login-error').classList.remove('visible');
+  }
+
+  async function doLoginNew() {
+    hideAuthError();
+    var loginVal = document.getElementById('login-identifier').value.trim();
+    var password = document.getElementById('login-password').value;
+    if (!loginVal || !password) { showAuthError('Заполните все поля'); return; }
+
+    var btn = document.getElementById('login-btn');
+    btn.classList.add('loading');
+
+    try {
+      var r = await fetch('/api/auth/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ login: loginVal, password })
+      });
+      var data = await r.json();
+      if (!r.ok) { showAuthError(data.error || 'Ошибка входа'); return; }
+      if (data.user) { try { localStorage.setItem('noryx_user', JSON.stringify(data.user)); } catch(e){} }
+      window.location.href = '/html/profile.html';
+    } catch(e) {
+      showAuthError('Ошибка сети. Попробуйте снова');
+    } finally {
+      btn.classList.remove('loading');
+    }
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLoginNew();
+  });
+</script>
 </body>
 </html>
