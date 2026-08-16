@@ -26,11 +26,21 @@
   <div class="di-nav">
     <a href="#advantages">Преимущества</a>
     <a href="#tariffs">Товары</a>
+    <a href="/html/policy.html">Политика</a>
   </div>
   <div id="header-auth">
     <a href="/html/login.html" class="di-login">Войти</a>
   </div>
+  <button class="di-burger" id="diBurger" aria-label="Меню">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+
+<div class="di-mobile-menu hidden" id="diMobileMenu">
+  <a href="#advantages" onclick="closeMobileMenu()">Преимущества</a>
+  <a href="#tariffs" onclick="closeMobileMenu()">Товары</a>
+  <a href="/html/policy.html" onclick="closeMobileMenu()">Политика</a>
+</div>
 
 <div class="content">
 
@@ -52,27 +62,58 @@
     <h2 class="section-title fade-in">Преимущества нашего мода</h2>
     <p class="section-subtitle fade-in" style="transition-delay:0.15s">Всё, что вам нужно для доминирования и комфортной игры на серверах.</p>
   </div>
-  <div class="advantages-grid">
-    <div class="glass-card advantage-card fade-in">
-      <div class="advantage-icon">
-        <img src="public/assets/pickaxe.png" alt="Производительность">
+  <div class="advantages-grid-new">
+
+    <div class="adv-card adv-card--perf fade-in">
+      <div class="adv-card__bg" style="background-image:url('public/assets/glyphs/purple.png')"></div>
+      <div class="adv-card__content">
+        <div class="adv-card__icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <h3>Производительность</h3>
+        <p>Оптимизированный код позволяет<br>достичь высокого FPS<br>даже на слабых<br>компьютерах.</p>
       </div>
-      <h3>Производительность</h3>
-      <p>Оптимизированный код позволяет достичь высокого FPS даже на слабых компьютерах.</p>
     </div>
-    <div class="glass-card advantage-card fade-in" style="transition-delay:0.15s">
-      <div class="advantage-icon">
-        <img src="public/assets/fly.png" alt="PvP Преимущество">
+
+    <div class="adv-right-col">
+
+      <div class="adv-card adv-card--design fade-in" style="transition-delay:0.15s">
+        <div class="adv-card__bg" style="background-image:url('public/assets/glyphs/gold.png')"></div>
+        <div class="adv-card__content">
+          <div class="adv-card__icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <h3>Дизайн</h3>
+          <p>Наслаждайтесь игрой с элегантным минималистичным интерфейсом. Каждый элемент имеет свой кастомный интерфейс.</p>
+        </div>
       </div>
-      <h3>PvP Преимущество</h3>
-      <p>Получите преимущество в бою с помощью специальных настроек и функций для PvP.</p>
-    </div>
-    <div class="glass-card advantage-card fade-in" style="transition-delay:0.3s">
-      <div class="advantage-icon">
-        <img src="public/assets/firework.png" alt="Дизайн">
+
+      <div class="adv-card adv-card--pvp fade-in" style="transition-delay:0.3s">
+        <div class="adv-card__bg" style="background-image:url('public/assets/glyphs/red.png')"></div>
+        <div class="adv-card__content">
+          <div class="adv-card__icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"/>
+              <path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+              <path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"/>
+              <path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"/>
+              <path d="M14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5z"/>
+              <path d="M15.5 19H14v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"/>
+              <path d="M10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z"/>
+              <path d="M8.5 5H10V3.5C10 2.67 9.33 2 8.5 2S7 2.67 7 3.5 7.67 5 8.5 5z"/>
+            </svg>
+          </div>
+          <h3>PvP Преимущество</h3>
+          <p>Получите преимущество в бою с помощью специальных настроек и функций для PvP. Специально для популярных СНГ-Серверов.</p>
+        </div>
       </div>
-      <h3>Дизайн</h3>
-      <p>Наслаждайтесь игрой с элегантным минималистичным интерфейсом.</p>
+
     </div>
   </div>
 </section>
@@ -142,21 +183,21 @@
         <div class="tariff-item" onclick="openGlobalModal('Сброс HWID','Требует подписки','75')">
           <div>
             <div class="tariff-item-name">Сброс HWID</div>
-            <div class="tariff-item-sub">если есть подписка</div>
+            <div class="tariff-item-sub">Временно не работает</div>
           </div>
           <span class="tariff-item-price other-price">75₽</span>
         </div>
         <div class="tariff-item" onclick="openGlobalModal('Докупить Alpha','Только при BETA LIFE','50')">
           <div>
             <div class="tariff-item-name">Докупить Alpha</div>
-            <div class="tariff-item-sub">если бета навсегда</div>
+            <div class="tariff-item-sub">Временно не работат</div>
           </div>
           <span class="tariff-item-price other-price">50₽</span>
         </div>
         <div class="tariff-item" onclick="openGlobalModal('Префикс','Навсегда','50')">
           <div>
             <div class="tariff-item-name">Префикс</div>
-            <div class="tariff-item-sub">навсегда</div>
+            <div class="tariff-item-sub">Кастомный префикс</div>
           </div>
           <span class="tariff-item-price other-price">50₽</span>
         </div>
@@ -173,13 +214,48 @@
 
 <section class="clickgui-section">
   <div class="clickgui-container fade-in">
-    <img src="public/assets/client-preview.png" alt="Client Preview" class="clickgui-preview-img">
+    <img src="public/assets/client-preview.png" alt="Alpha Preview" class="clickgui-preview-img">
   </div>
 </section>
 
-<footer>
-  <p>© NoryxDLC made by illusiononce with love</p>
+<footer class="site-footer">
+  <div class="footer-grid">
+    <a href="https://t.me/noryxdlc" target="_blank" class="footer-link">
+      <img src="public/assets/off/telegram.svg" alt="Телеграм" class="footer-icon">
+      <span class="footer-link-label">Наш телеграм</span>
+    </a>
+    <a href="https://www.tiktok.com/@noryxhack?_r=1&_t=ZS-98vs4d2H2Lw" target="_blank" class="footer-link">
+      <img src="public/assets/off/video.svg" alt="Видео" class="footer-icon">
+      <span class="footer-link-label">Наш TikTok</span>
+    </a>
+    <a href="#" class="footer-link" id="footer-profile-link">
+      <img src="public/assets/off/play.svg" alt="Играть" class="footer-icon">
+      <span class="footer-link-label">Профиль</span>
+    </a>
+    <div class="footer-link footer-brand">
+      <img src="public/assets/off/clock.svg" alt="Часы" class="footer-icon">
+      <span class="footer-link-label">NoryxDLC 2025–2026</span>
+    </div>
+    <a href="#" class="footer-link" id="footer-buy-link">
+      <img src="public/assets/off/price.svg" alt="Карточка" class="footer-icon">
+      <span class="footer-link-label">Купить клиент</span>
+    </a>
+  </div>
+  <p class="footer-copy">© NoryxDLC by illusiononce</p>
 </footer>
+
+<script>
+(function() {
+  function getUser() {
+    try { var u = localStorage.getItem('noryx_user'); return u ? JSON.parse(u) : null; } catch(e) { return null; }
+  }
+  var user = getUser();
+  var profileLink = document.getElementById('footer-profile-link');
+  var buyLink = document.getElementById('footer-buy-link');
+  if (profileLink) profileLink.href = user ? '/html/profile.html' : '/html/login.html';
+  if (buyLink) buyLink.href = user ? '#tariffs' : '/html/login.html';
+})();
+</script>
 
 </div>
 
@@ -219,11 +295,33 @@
 
 <script src="js/main.js"></script>
 <script>
-document.getElementById('\x67\x6c\x6f\x62\x61\x6c\x2d\x73\x68\x6f\x70\x2d\x6d\x6f\x64\x61\x6c').addEventListener('\x63\x6c\x69\x63\x6b', function(e) {
+document.getElementById('global-shop-modal').addEventListener('click', function(e) {
   if (e.target === this) closeGlobalModal();
 });
-document.addEventListener('\x6b\x65\x79\x64\x6f\x77\x6e', function(e) {
-  if (e.key === '\x45\x73\x63\x61\x70\x65') closeGlobalModal();
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeGlobalModal();
+});
+
+const diBurger = document.getElementById('diBurger');
+const diMobileMenu = document.getElementById('diMobileMenu');
+diBurger.addEventListener('click', function() {
+  const isOpen = !diMobileMenu.classList.contains('hidden');
+  if (isOpen) {
+    diMobileMenu.classList.add('hidden');
+    diBurger.classList.remove('open');
+  } else {
+    diMobileMenu.classList.remove('hidden');
+    diBurger.classList.add('open');
+  }
+});
+function closeMobileMenu() {
+  diMobileMenu.classList.add('hidden');
+  diBurger.classList.remove('open');
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.dynamic-island') && !e.target.closest('.di-mobile-menu')) {
+    closeMobileMenu();
+  }
 });
 </script>
 </body>

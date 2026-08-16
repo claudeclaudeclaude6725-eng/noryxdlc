@@ -1,3 +1,4 @@
+require('dotenv').config();
 const http   = require('http');
 const fs     = require('fs');
 const path   = require('path');
@@ -6,7 +7,7 @@ const { Pool } = require('pg');
 
 const PORT   = process.env.PORT || 3001;
 const ROOT   = __dirname;
-const DB_URL = process.env.DB_URL;;
+const DB_URL = process.env.DB_URL;
 
 const MIME_MAP = {
   '.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8',
@@ -63,7 +64,7 @@ function send(res, status, data, extra) {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
     'Access-Control-Allow-Credentials': 'true'
   }, extra || {});
   res.writeHead(status, h);
@@ -83,27 +84,6 @@ function serveFile(res, fp) {
 async function db(sql, p) {
   var c = await pool.connect();
   try { return await c.query(sql, p); } finally { c.release(); }
-}
-
-async function hashPw(pw) {
-  return new Promise(function(res, rej) {
-    var salt = crypto.randomBytes(16).toString('hex');
-    crypto.scrypt(pw, salt, 64, function(err, k) {
-      if (err) return rej(err);
-      res(salt + ':' + k.toString('hex'));
-    });
-  });
-}
-
-async function verifyPw(pw, stored) {
-  return new Promise(function(res, rej) {
-    var parts = stored.split(':');
-    crypto.scrypt(pw, parts[0], 64, function(err, k) {
-      if (err) return rej(err);
-      try { res(crypto.timingSafeEqual(k, Buffer.from(parts[1], 'hex'))); }
-      catch(e) { res(false); }
-    });
-  });
 }
 
 function genKey(prefix) {
@@ -127,11 +107,16 @@ function buildUser(row) {
   };
 }
 
+function isSubActive(row) {
+  if (row.role === 'admin' || (row.username && row.username.toLowerCase() === 'illusiononce')) return true;
+  return !!(row.subscription_type && row.subscription_expires_at && new Date(row.subscription_expires_at) > new Date());
+}
+
 async function handleApi(req, res, pathname, body) {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'GET,POST,PUT,DELETE,OPTIONS',
-      'Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Credentials':'true'
+      'Access-Control-Allow-Headers':'Content-Type,Authorization','Access-Control-Allow-Credentials':'true'
     });
     return res.end();
   }
@@ -146,9 +131,8 @@ async function handleApi(req, res, pathname, body) {
     try {
       var ex = await db('SELECT id FROM users WHERE email=$1 OR lower(username)=$2 LIMIT 1',[email,username.toLowerCase()]);
       if (ex.rows.length) return send(res, 409, { error: 'Email или логин уже занят' });
-      var hashed = await hashPw(password);
       var role = username.toLowerCase() === 'illusiononce' ? 'admin' : 'user';
-      var r = await db('INSERT INTO users (username,email,password,role,created_at) VALUES ($1,$2,$3,$4,NOW()) RETURNING id,username,email,role,created_at,prefix,prefix_color,subscription_type,subscription_expires_at,media_channel,media_balance,media_promo_code,media_since',[username,email,hashed,role]);
+      var r = await db('INSERT INTO users (username,email,password,role,created_at) VALUES ($1,$2,$3,$4,NOW()) RETURNING id,username,email,role,created_at,prefix,prefix_color,subscription_type,subscription_expires_at,media_channel,media_balance,media_promo_code,media_since',[username,email,password,role]);
       var token = createSession(buildUser(r.rows[0]));
       return send(res, 201, { user: buildUser(r.rows[0]) }, { 'Set-Cookie': setCookie(token) });
     } catch(e) { return send(res, 500, { error: e.message }); }
@@ -162,7 +146,7 @@ async function handleApi(req, res, pathname, body) {
       var r = await db('SELECT * FROM users WHERE email=$1 OR lower(username)=$1 LIMIT 1',[login]);
       if (!r.rows.length) return send(res, 401, { error: 'Неверный логин или пароль' });
       var row = r.rows[0];
-      if (!await verifyPw(password, row.password)) return send(res, 401, { error: 'Неверный логин или пароль' });
+      if (password !== row.password) return send(res, 401, { error: 'Неверный логин или пароль' });
       if (row.banned_until && new Date(row.banned_until) > new Date()) {
         var until = new Date(row.banned_until).toLocaleDateString('ru-RU');
         return send(res, 403, { error: 'Ошибка! Вы забанены. Причина: ' + row.ban_reason + '. До: ' + until });
@@ -193,6 +177,60 @@ async function handleApi(req, res, pathname, body) {
       sessions[sess.token].user = user;
       return send(res, 200, { user });
     } catch(e) { return send(res, 200, { user: sess.user }); }
+  }
+
+  if (pathname === '/api/client/login' && req.method === 'POST') {
+    var login    = (body.login    || '').trim().toLowerCase();
+    var password = (body.password || '');
+    var hwid     = (body.hwid     || '').trim();
+    if (!login || !password || !hwid) return send(res, 400, { error: 'missing_fields' });
+    try {
+      var r = await db('SELECT * FROM users WHERE email=$1 OR lower(username)=$1 LIMIT 1', [login]);
+      if (!r.rows.length) return send(res, 401, { error: 'wrong_credentials' });
+      var row = r.rows[0];
+      if (password !== row.password) return send(res, 401, { error: 'wrong_credentials' });
+      if (row.banned_until && new Date(row.banned_until) > new Date()) {
+        return send(res, 403, { error: 'banned', banned_until: row.banned_until, ban_reason: row.ban_reason || '' });
+      }
+      if (!isSubActive(row)) return send(res, 402, { error: 'no_subscription' });
+      if (row.hwid && row.hwid !== hwid) return send(res, 403, { error: 'device_mismatch' });
+      var token   = genToken();
+      var expires = new Date(Date.now() + 864e5 * 30).toISOString();
+      if (!row.hwid) {
+        await db('UPDATE users SET session_token=$1,session_expires_at=$2,hwid=$3 WHERE id=$4',[token,expires,hwid,row.id]);
+      } else {
+        await db('UPDATE users SET session_token=$1,session_expires_at=$2 WHERE id=$3',[token,expires,row.id]);
+      }
+      return send(res, 200, {
+        id: row.id, login: row.username, role: row.role,
+        role_name: row.role_name || row.role, role_color: row.role_color || '#ffffff',
+        prefix: row.prefix || '', prefix_color: row.prefix_color || '',
+        hwid: row.hwid || hwid, subscription_active: true,
+        banned_until: '', ban_reason: '', session_token: token
+      });
+    } catch(e) { return send(res, 500, { error: e.message }); }
+  }
+
+  if (pathname === '/api/client/validate' && req.method === 'POST') {
+    var hwid  = (body.hwid || '').trim();
+    var token = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
+    if (!token || !hwid) return send(res, 401, { error: 'missing_token' });
+    try {
+      var r = await db('SELECT * FROM users WHERE session_token=$1 LIMIT 1', [token]);
+      if (!r.rows.length) return send(res, 401, { error: 'session_expired' });
+      var row = r.rows[0];
+      if (!row.session_expires_at || new Date(row.session_expires_at) < new Date()) return send(res, 401, { error: 'session_expired' });
+      if (row.hwid && row.hwid !== hwid) return send(res, 403, { error: 'device_mismatch' });
+      if (row.banned_until && new Date(row.banned_until) > new Date()) return send(res, 403, { error: 'banned', banned_until: row.banned_until });
+      if (!isSubActive(row)) return send(res, 402, { error: 'no_subscription' });
+      return send(res, 200, {
+        id: row.id, login: row.username, role: row.role,
+        role_name: row.role_name || row.role, role_color: row.role_color || '#ffffff',
+        prefix: row.prefix || '', prefix_color: row.prefix_color || '',
+        hwid: row.hwid, subscription_active: true,
+        banned_until: '', ban_reason: '', session_token: token
+      });
+    } catch(e) { return send(res, 500, { error: e.message }); }
   }
 
   var sess = getSession(req);
@@ -270,7 +308,7 @@ async function handleApi(req, res, pathname, body) {
       return send(res, 200, { ok: true });
     } catch(e) { return send(res, 500, { error: e.message }); }
   }
-
+  
   if (pathname === '/api/admin/give-balance' && req.method === 'POST') {
     if (!sess||sess.user.role!=='admin') return send(res, 403, { error: 'Нет доступа' });
     var { userId, amount } = body;
