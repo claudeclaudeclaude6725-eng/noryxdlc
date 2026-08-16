@@ -53,21 +53,12 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function applyStoredTheme() {
-  var COLOR_MAP = {
-    'pink':'#EC4899','red':'#EF4444','purple':'#7C3AED','green':'#4ADE80',
-    'blue':'#3B82F6','cyan':'#06B6D4','gold':'#F59E0B','white':'#FFFFFF',
-    'gray':'#6B7280','black':'#111111'
-  };
-  var savedColor = localStorage.getItem('noryx_color');
-  var savedBg    = localStorage.getItem('noryx_bg');
-  if (savedColor && COLOR_MAP[savedColor]) {
-    document.documentElement.style.setProperty('--primary', COLOR_MAP[savedColor]);
-    document.documentElement.style.setProperty('--primary-dark', COLOR_MAP[savedColor]);
-  }
-  if (savedBg) {
-    var bgEl = document.getElementById('bgFull');
-    if (bgEl) bgEl.style.backgroundImage = 'url("' + savedBg + '")';
-  }
+  localStorage.removeItem('noryx_color');
+  localStorage.removeItem('noryx_bg');
+  document.documentElement.style.setProperty('--primary', '#7C3AED');
+  document.documentElement.style.setProperty('--primary-dark', '#6D28D9');
+  var bgEl = document.getElementById('bgFull');
+  if (bgEl) bgEl.style.backgroundImage = 'url("/public/assets/bg.jpg")';
 }
 
 function updateHeaderAuth() {

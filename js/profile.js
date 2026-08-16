@@ -1,23 +1,8 @@
 var currentUser = null;
-var selectedColor = null;
-var selectedBg = null;
-
-var COLOR_MAP = {
-  'pink':  { hex:'#EC4899', label:'Розовый',    folder:'pink',   bgCount:3 },
-  'red':   { hex:'#EF4444', label:'Красный',     folder:'red',    bgCount:3 },
-  'purple':{ hex:'#7C3AED', label:'Фиолетовый',  folder:'purple', bgCount:3 },
-  'green': { hex:'#4ADE80', label:'Зелёный',     folder:'green',  bgCount:3 },
-  'blue':  { hex:'#3B82F6', label:'Синий',       folder:'blue',   bgCount:3 },
-  'cyan':  { hex:'#06B6D4', label:'Циан',        folder:'cyan',   bgCount:3 },
-  'gold':  { hex:'#F59E0B', label:'Золотой',     folder:'gold',   bgCount:3 },
-  'gray':  { hex:'#6B7280', label:'Серый',       folder:'gray',   bgCount:3 },
-  'white': { hex:'#FFFFFF', label:'Белый',       folder:'white',  bgCount:3 },
-  'black': { hex:'#111111', label:'Чёрный',      folder:'black',  bgCount:3 }
-};
 
 var ROLE_LABELS = {
-  'user':'👤 Юзер','beta':'⭐ Beta','alpha':'💎 Alpha',
-  'vip':'👑 VIP','media':'🎥 MEDIA','moderator':'🛡️ Модератор','admin':'🔴 Админ'
+  'user':'Юзер','beta':'Beta','alpha':'Alpha',
+  'vip':'VIP','media':'MEDIA','moderator':'Модератор','admin':'Админ'
 };
 
 var SHOP_ITEMS = [
@@ -45,16 +30,10 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function applyStoredTheme() {
-  var savedColor = localStorage.getItem('noryx_color');
-  var savedBg    = localStorage.getItem('noryx_bg');
-  if (savedColor && COLOR_MAP[savedColor]) {
-    document.documentElement.style.setProperty('--primary', COLOR_MAP[savedColor].hex);
-    document.documentElement.style.setProperty('--primary-dark', COLOR_MAP[savedColor].hex);
-  }
-  if (savedBg) {
-    var bgEl = document.getElementById('bgFull');
-    if (bgEl) bgEl.style.backgroundImage = 'url("' + savedBg + '")';
-  }
+  document.documentElement.style.setProperty('--primary', '#7C3AED');
+  document.documentElement.style.setProperty('--primary-dark', '#6D28D9');
+  var bgEl = document.getElementById('bgFull');
+  if (bgEl) bgEl.style.backgroundImage = 'url("/public/assets/bg.jpg")';
 }
 
 async function loadProfile() {
@@ -83,7 +62,7 @@ function renderProfile(u) {
   setText('prof-id',        '#' + (u.id || ''));
   setText('prof-email',     u.email || '');
   setText('prof-created',   u.createdAt ? new Date(u.createdAt).toLocaleDateString('ru-RU') : '—');
-  setText('prof-role',      ROLE_LABELS[u.role] || '👤 Юзер');
+  setText('prof-role',      ROLE_LABELS[u.role] || 'Юзер');
 
   var prefixEl = document.getElementById('prof-prefix');
   if (prefixEl) {
@@ -119,7 +98,6 @@ function renderProfile(u) {
   if (adminBtn) adminBtn.style.display = u.role === 'admin' ? 'flex' : 'none';
 
   renderShop(u);
-  renderColorCircles();
 
   if (u.role === 'media' || u.role === 'admin') renderMediaPanel(u);
   if (typeof renderDownloadButtons === 'function') renderDownloadButtons(u);
@@ -246,100 +224,7 @@ function showKeyMsg(text, color) {
   setTimeout(function() { el.style.display = 'none'; }, 4000);
 }
 
-function renderColorCircles() {
-  var container = document.getElementById('color-circles');
-  if (!container) return;
-  container.innerHTML = '';
-  var savedColor = localStorage.getItem('noryx_color') || 'pink';
 
-  Object.keys(COLOR_MAP).forEach(function(key) {
-    var c = COLOR_MAP[key];
-    var div = document.createElement('div');
-    div.className = 'color-circle' + (key === savedColor ? ' selected' : '');
-    div.style.background = c.hex;
-    div.setAttribute('title', c.label);
-    div.onclick = function() { selectColor(key); };
-    container.appendChild(div);
-  });
-
-  var label = document.getElementById('selected-color-label');
-  if (label && COLOR_MAP[savedColor]) {
-    label.textContent = COLOR_MAP[savedColor].label;
-    label.style.color = COLOR_MAP[savedColor].hex;
-  }
-  renderBgPicker(savedColor);
-}
-
-function selectColor(key) {
-  selectedColor = key;
-  document.querySelectorAll('.color-circle').forEach(function(c) { c.classList.remove('selected'); });
-  var circles = document.querySelectorAll('.color-circle');
-  var keys = Object.keys(COLOR_MAP);
-  var idx = keys.indexOf(key);
-  if (circles[idx]) circles[idx].classList.add('selected');
-
-  var colorData = COLOR_MAP[key];
-  var label = document.getElementById('selected-color-label');
-  if (label && colorData) { label.textContent = colorData.label; label.style.color = colorData.hex; }
-
-  document.documentElement.style.setProperty('--primary', colorData.hex);
-  document.documentElement.style.setProperty('--primary-dark', colorData.hex);
-
-  selectedBg = null;
-  renderBgPicker(key);
-  document.getElementById('color-save-msg').style.display = 'none';
-}
-
-function renderBgPicker(colorKey) {
-  var container = document.getElementById('bg-picker');
-  if (!container) return;
-  var colorData = COLOR_MAP[colorKey];
-  if (!colorData) { container.innerHTML = ''; return; }
-  container.innerHTML = '';
-
-  var title = document.createElement('p');
-  title.style.cssText = 'color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:12px;margin-top:16px';
-  title.textContent = 'Фон для ' + colorData.label + ':';
-  container.appendChild(title);
-
-  var grid = document.createElement('div');
-  grid.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap';
-  var savedBg = localStorage.getItem('noryx_bg');
-
-  for (var i = 1; i <= colorData.bgCount; i++) {
-    (function(index) {
-      var imgPath = '/public/assets/colors/' + colorData.folder + '/' + index + '.png';
-      var wrapper = document.createElement('div');
-      wrapper.style.cssText = 'position:relative;cursor:pointer;border-radius:12px;overflow:hidden;border:2px solid transparent;transition:border-color 0.2s';
-      wrapper.setAttribute('data-bg', imgPath);
-      if (savedBg === imgPath) { wrapper.style.borderColor = colorData.hex; selectedBg = imgPath; }
-
-      var img = document.createElement('img');
-      img.src = imgPath;
-      img.style.cssText = 'width:110px;height:65px;object-fit:cover;display:block';
-      img.onerror = function() { wrapper.style.display = 'none'; };
-
-      wrapper.appendChild(img);
-      wrapper.onclick = function() {
-        document.querySelectorAll('#bg-picker [data-bg]').forEach(function(w) { w.style.borderColor = 'transparent'; });
-        wrapper.style.borderColor = colorData.hex;
-        selectedBg = imgPath;
-        var bgEl = document.getElementById('bgFull');
-        if (bgEl) bgEl.style.backgroundImage = 'url("' + imgPath + '")';
-      };
-      grid.appendChild(wrapper);
-    })(i);
-  }
-  container.appendChild(grid);
-}
-
-function saveColor() {
-  if (!selectedColor) return;
-  localStorage.setItem('noryx_color', selectedColor);
-  if (selectedBg) localStorage.setItem('noryx_bg', selectedBg);
-  var msg = document.getElementById('color-save-msg');
-  if (msg) { msg.style.display = 'block'; setTimeout(function() { msg.style.display = 'none'; }, 3000); }
-}
 
 function renderMediaPanel(u) {
   setText('media-username', u.username);
