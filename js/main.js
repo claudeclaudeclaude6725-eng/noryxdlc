@@ -58,7 +58,7 @@ function applyStoredTheme() {
   document.documentElement.style.setProperty('--primary', '#7C3AED');
   document.documentElement.style.setProperty('--primary-dark', '#6D28D9');
   var bgEl = document.getElementById('bgFull');
-  if (bgEl) bgEl.style.backgroundImage = 'url("/public/assets/bg.jpg")';
+  if (bgEl) bgEl.style.backgroundImage = 'url("/assets/bg.jpg")';
 }
 
 function updateHeaderAuth() {
