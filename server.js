@@ -164,8 +164,9 @@ function rateLimit(req, key, limit, windowMs) {
 }
 
 function requireCsrf(req, res, sess) {
-  if (!sess) return false;
+  if (!sess) { console.log('[CSRF] no session'); sendError(res, 403, 'Forbidden'); return false; }
   var token = req.headers['x-csrf-token'] || '';
+  console.log('[CSRF] token:', token ? token.slice(0,8)+'...' : 'EMPTY', 'expected:', sess.csrfToken ? sess.csrfToken.slice(0,8)+'...' : 'NONE', 'match:', token === sess.csrfToken);
   if (token && token === sess.csrfToken) return true;
   sendError(res, 403, 'Forbidden');
   return false;
@@ -281,7 +282,7 @@ async function handleApi(req, res, pathname, body) {
     if (sess) destroySession(sess.token);
     return send(res, 200, { ok: true }, { 'Set-Cookie': clearCookie() });
   }
-
+  
   if (pathname === '/api/auth/me' && req.method === 'GET') {
     var sess = getSession(req);
     if (!sess) return send(res, 401, { error: 'Не авторизован' });
@@ -334,7 +335,7 @@ async function handleApi(req, res, pathname, body) {
       });
     } catch(e) { console.error(e); return sendError(res, 500, 'Internal server error'); }
   }
-  
+
   if (pathname === '/api/client/validate' && req.method === 'POST') {
     var hwid  = (body.hwid || '').trim();
     var token = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
