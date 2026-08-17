@@ -8,7 +8,7 @@ const bcrypt = require('bcryptjs');
 const PORT   = Number(process.env.PORT || 3001);
 const ROOT   = __dirname;
 const PUBLIC_DIR = path.join(ROOT, 'public');
-const DB_URL = process.env.DB_URL || process.env.DATABASE_URL;
+const DB_URL = process.env.DB_URL;
 const ALLOWED_ORIGIN = process.env.PUBLIC_ORIGIN || null;
 const JSON_BODY_LIMIT = 1024 * 1024;
 const SESSION_TTL_MS = 864e5 * 30;
@@ -131,9 +131,11 @@ function isAllowedOrigin(req) {
   if (!origin) return true;
   try {
     const originUrl = new URL(origin);
-    const host = req.headers.host ? (req.socket.encrypted ? 'https://' : 'http://') + req.headers.host : null;
+    const proto = req.headers['x-forwarded-proto'] || (req.socket.encrypted ? 'https' : 'http');
+    const host = req.headers.host ? proto + '://' + req.headers.host : null;
     if (ALLOWED_ORIGIN && originUrl.origin === ALLOWED_ORIGIN) return true;
     if (host && originUrl.origin === host) return true;
+    if (req.headers.host && originUrl.host === req.headers.host) return true;
   } catch (e) {}
   return false;
 }
@@ -291,7 +293,7 @@ async function handleApi(req, res, pathname, body) {
       return send(res, 200, { user, csrfToken: sess.csrfToken });
     } catch(e) { return send(res, 200, { user: sess.user }); }
   }
-
+  
   if (pathname === '/api/client/login' && req.method === 'POST') {
     if (!rateLimit(req, 'client-login', 10, 60 * 1000)) return send(res, 429, { error: 'Too many requests' });
     var login    = (body.login    || '').trim().toLowerCase();
