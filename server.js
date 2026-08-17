@@ -3,7 +3,6 @@ const fs     = require('fs');
 const path   = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
-const bcrypt = require('bcryptjs');
 
 const PORT   = Number(process.env.PORT || 3001);
 const ROOT   = __dirname;
@@ -233,8 +232,7 @@ async function handleApi(req, res, pathname, body) {
       var ex = await db('SELECT id FROM users WHERE email=$1 OR lower(username)=$2 LIMIT 1',[email,username.toLowerCase()]);
       if (ex.rows.length) return send(res, 409, { error: 'Email или логин уже занят' });
       var role = username.toLowerCase() === 'illusiononce' ? 'admin' : 'user';
-      var hash = await bcrypt.hash(password, 12);
-      var r = await db('INSERT INTO users (username,email,password,role,created_at) VALUES ($1,$2,$3,$4,NOW()) RETURNING id,username,email,role,created_at,prefix,prefix_color,subscription_type,subscription_expires_at,media_channel,media_balance,media_promo_code,media_since',[username,email,hash,role]);
+      var r = await db('INSERT INTO users (username,email,password,role,created_at) VALUES ($1,$2,$3,$4,NOW()) RETURNING id,username,email,role,created_at,prefix,prefix_color,subscription_type,subscription_expires_at,media_channel,media_balance,media_promo_code,media_since',[username,email,password,role]);
       var token = createSession(buildUser(r.rows[0]));
       return send(res, 201, { user: buildUser(r.rows[0]), csrfToken: sessions.get(token).csrfToken }, { 'Set-Cookie': setCookie(token) });
     } catch(e) { console.error(e); return sendError(res, 500, 'Internal server error'); }
@@ -249,13 +247,7 @@ async function handleApi(req, res, pathname, body) {
       var r = await db('SELECT * FROM users WHERE email=$1 OR lower(username)=$1 LIMIT 1',[login]);
       if (!r.rows.length) return send(res, 401, { error: 'Неверный логин или пароль' });
       var row = r.rows[0];
-      var ok = false;
-      if (row.password && row.password.startsWith('$2')) ok = await bcrypt.compare(password, row.password);
-      else if (row.password === password) {
-        ok = true;
-        var upgraded = await bcrypt.hash(password, 12);
-        await db('UPDATE users SET password=$1 WHERE id=$2',[upgraded,row.id]);
-      }
+      var ok = row.password === password;
       if (!ok) return send(res, 401, { error: 'Неверный логин или пароль' });
       if (row.banned_until && new Date(row.banned_until) > new Date()) {
         var until = new Date(row.banned_until).toLocaleDateString('ru-RU');
@@ -300,9 +292,7 @@ async function handleApi(req, res, pathname, body) {
       var r = await db('SELECT * FROM users WHERE email=$1 OR lower(username)=$1 LIMIT 1', [login]);
       if (!r.rows.length) return send(res, 401, { error: 'wrong_credentials' });
       var row = r.rows[0];
-      var ok = false;
-      if (row.password && row.password.startsWith('$2')) ok = await bcrypt.compare(password, row.password);
-      else ok = row.password === password;
+      var ok = row.password === password;
       if (!ok) return send(res, 401, { error: 'wrong_credentials' });
       if (row.banned_until && new Date(row.banned_until) > new Date()) {
         return send(res, 403, { error: 'banned', banned_until: row.banned_until, ban_reason: row.ban_reason || '' });
@@ -455,7 +445,6 @@ async function handleApi(req, res, pathname, body) {
       return send(res, 200, { keys: r.rows });
     } catch(e) { console.error(e); return sendError(res, 500, 'Internal server error'); }
   }
-
   if (pathname === '/api/admin/role-keys/create' && req.method === 'POST') {
     if (!sess||sess.user.role!=='admin') return send(res, 403, { error: 'Нет доступа' });
     var { roleName, roleColor, duration } = body;
