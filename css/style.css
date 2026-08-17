@@ -41,7 +41,7 @@ button { background: none; border: none; font-family: inherit; cursor: pointer; 
   width: 100%; height: 100%;
   z-index: 0;
   pointer-events: none;
-  background: url('../public/assets/bg.jpg') center center / cover no-repeat;
+  background: url('/assets/bg.jpg') center center / cover no-repeat;
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
   will-change: transform;
