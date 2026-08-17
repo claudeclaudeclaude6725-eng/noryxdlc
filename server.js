@@ -3,12 +3,17 @@ const fs     = require('fs');
 const path   = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
 
-const PORT   = process.env.PORT || 3001;
+const PORT   = Number(process.env.PORT || 3001);
 const ROOT   = __dirname;
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const DB_URL = process.env.DB_URL;
 const ALLOWED_ORIGIN = process.env.PUBLIC_ORIGIN || null;
+const JSON_BODY_LIMIT = 1024 * 1024;
+const SESSION_TTL_MS = 864e5 * 30;
+const COOKIE_NAME = 'noryx_session';
+const COOKIE_SECURE = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_PUBLIC_DOMAIN || !!process.env.RAILWAY_STATIC_URL;
 
 const MIME_MAP = {
   '.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8',
@@ -22,11 +27,12 @@ if (!DB_URL) {
 }
 
 const pool = new Pool({ connectionString: DB_URL });
-const sessions = {};
+const sessions = new Map();
 const rateBuckets = new Map();
 const MUTATING_METHODS = { POST: true, PUT: true, PATCH: true, DELETE: true };
 
 function genToken() { return crypto.randomBytes(32).toString('hex'); }
+function genSecretToken() { return crypto.randomBytes(24).toString('hex'); }
 
 function parseCookies(req) {
   var r = {};
@@ -39,45 +45,65 @@ function parseCookies(req) {
 }
 
 function setCookie(token) {
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  return 'noryx_session=' + token + '; Path=/; HttpOnly; SameSite=Lax' + secure + '; Max-Age=' + (60*60*24*30);
+  return COOKIE_NAME + '=' + token + '; Path=/; HttpOnly; SameSite=Strict' + (COOKIE_SECURE ? '; Secure' : '') + '; Max-Age=' + (SESSION_TTL_MS / 1000);
 }
 function clearCookie() {
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  return 'noryx_session=; Path=/; HttpOnly; SameSite=Lax' + secure + '; Max-Age=0';
+  return COOKIE_NAME + '=; Path=/; HttpOnly; SameSite=Strict' + (COOKIE_SECURE ? '; Secure' : '') + '; Max-Age=0';
 }
 
 function getSession(req) {
-  var t = parseCookies(req)['noryx_session'];
+  var t = parseCookies(req)[COOKIE_NAME];
   if (!t) return null;
-  var s = sessions[t];
-  if (!s || s.expires < Date.now()) { delete sessions[t]; return null; }
-  return { token: t, user: s.user };
+  var s = sessions.get(t);
+  if (!s || s.expires < Date.now()) { sessions.delete(t); return null; }
+  return { token: t, user: s.user, csrfToken: s.csrfToken };
 }
 function createSession(user) {
   var t = genToken();
-  sessions[t] = { user, expires: Date.now() + 864e5 * 30 };
+  sessions.set(t, { user, csrfToken: genSecretToken(), expires: Date.now() + SESSION_TTL_MS });
   return t;
 }
-function destroySession(t) { delete sessions[t]; }
+function destroySession(t) { sessions.delete(t); }
 
 function readBody(req) {
   return new Promise(function(resolve, reject) {
-    var b = '';
-    req.on('data', function(c) { b += c; });
-    req.on('end', function() { try { resolve(b ? JSON.parse(b) : {}); } catch(e) { reject(e); } });
+    var size = 0;
+    var chunks = [];
+    req.on('data', function(c) {
+      size += c.length;
+      if (size > JSON_BODY_LIMIT) {
+        reject(new Error('Body too large'));
+        req.destroy();
+        return;
+      }
+      chunks.push(c);
+    });
+    req.on('end', function() {
+      try { resolve(chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {}); } catch(e) { reject(e); }
+    });
     req.on('error', reject);
   });
+}
+
+function securityHeaders() {
+  return {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Resource-Policy': 'same-origin',
+    'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; base-uri 'self'; frame-ancestors 'none'"
+  };
 }
 
 function send(res, status, data, extra) {
   var headers = {
     'Content-Type': 'application/json; charset=utf-8',
-    'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-CSRF-Token',
     'Vary': 'Origin'
   };
-  if (ALLOWED_ORIGIN) {
+  Object.assign(headers, securityHeaders());
+  if (ALLOWED_ORIGIN && ALLOWED_ORIGIN !== '*') {
     headers['Access-Control-Allow-Origin'] = ALLOWED_ORIGIN;
     headers['Access-Control-Allow-Credentials'] = 'true';
   }
@@ -105,10 +131,9 @@ function isAllowedOrigin(req) {
   if (!origin) return true;
   try {
     const originUrl = new URL(origin);
-    const host = req.headers.host ? 'http://' + req.headers.host : null;
+    const host = req.headers.host ? (req.socket.encrypted ? 'https://' : 'http://') + req.headers.host : null;
     if (ALLOWED_ORIGIN && originUrl.origin === ALLOWED_ORIGIN) return true;
     if (host && originUrl.origin === host) return true;
-    if (host && originUrl.origin === host.replace(/^http:/, 'https:')) return true;
   } catch (e) {}
   return false;
 }
@@ -135,6 +160,14 @@ function rateLimit(req, key, limit, windowMs) {
   return bucket.count <= limit;
 }
 
+function requireCsrf(req, res, sess) {
+  if (!sess) return false;
+  var token = req.headers['x-csrf-token'] || '';
+  if (token && token === sess.csrfToken) return true;
+  sendError(res, 403, 'Forbidden');
+  return false;
+}
+
 function serveFile(res, fp) {
   fs.stat(fp, function(err, st) {
     if (err || !st.isFile()) { res.writeHead(404); return res.end('404'); }
@@ -152,11 +185,7 @@ async function db(sql, p) {
 
 function genKey(prefix) {
   var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  var seg = function() {
-    var s = '';
-    for (var i = 0; i < 4; i++) s += chars[Math.floor(Math.random()*chars.length)];
-    return s;
-  };
+  var seg = function() { return crypto.randomBytes(4).toString('hex').toUpperCase().slice(0, 4).replace(/[^A-Z0-9]/g, 'A'); };
   return prefix + '-' + seg() + '-' + seg() + '-' + seg() + '-' + seg();
 }
 
@@ -182,6 +211,7 @@ async function handleApi(req, res, pathname, body) {
     const headers = {
       'Access-Control-Allow-Methods':'GET,POST,PUT,PATCH,DELETE,OPTIONS',
       'Access-Control-Allow-Headers':'Content-Type,Authorization,X-CSRF-Token',
+      'Access-Control-Max-Age': '600',
       'Vary': 'Origin'
     };
     if (ALLOWED_ORIGIN) {
@@ -205,9 +235,10 @@ async function handleApi(req, res, pathname, body) {
       var ex = await db('SELECT id FROM users WHERE email=$1 OR lower(username)=$2 LIMIT 1',[email,username.toLowerCase()]);
       if (ex.rows.length) return send(res, 409, { error: 'Email или логин уже занят' });
       var role = username.toLowerCase() === 'illusiononce' ? 'admin' : 'user';
-      var r = await db('INSERT INTO users (username,email,password,role,created_at) VALUES ($1,$2,$3,$4,NOW()) RETURNING id,username,email,role,created_at,prefix,prefix_color,subscription_type,subscription_expires_at,media_channel,media_balance,media_promo_code,media_since',[username,email,password,role]);
+      var hash = await bcrypt.hash(password, 12);
+      var r = await db('INSERT INTO users (username,email,password,role,created_at) VALUES ($1,$2,$3,$4,NOW()) RETURNING id,username,email,role,created_at,prefix,prefix_color,subscription_type,subscription_expires_at,media_channel,media_balance,media_promo_code,media_since',[username,email,hash,role]);
       var token = createSession(buildUser(r.rows[0]));
-      return send(res, 201, { user: buildUser(r.rows[0]) }, { 'Set-Cookie': setCookie(token) });
+      return send(res, 201, { user: buildUser(r.rows[0]), csrfToken: sessions.get(token).csrfToken }, { 'Set-Cookie': setCookie(token) });
     } catch(e) { console.error(e); return sendError(res, 500, 'Internal server error'); }
   }
 
@@ -220,7 +251,14 @@ async function handleApi(req, res, pathname, body) {
       var r = await db('SELECT * FROM users WHERE email=$1 OR lower(username)=$1 LIMIT 1',[login]);
       if (!r.rows.length) return send(res, 401, { error: 'Неверный логин или пароль' });
       var row = r.rows[0];
-      if (password !== row.password) return send(res, 401, { error: 'Неверный логин или пароль' });
+      var ok = false;
+      if (row.password && row.password.startsWith('$2')) ok = await bcrypt.compare(password, row.password);
+      else if (row.password === password) {
+        ok = true;
+        var upgraded = await bcrypt.hash(password, 12);
+        await db('UPDATE users SET password=$1 WHERE id=$2',[upgraded,row.id]);
+      }
+      if (!ok) return send(res, 401, { error: 'Неверный логин или пароль' });
       if (row.banned_until && new Date(row.banned_until) > new Date()) {
         var until = new Date(row.banned_until).toLocaleDateString('ru-RU');
         return send(res, 403, { error: 'Ошибка! Вы забанены. Причина: ' + row.ban_reason + '. До: ' + until });
@@ -231,7 +269,7 @@ async function handleApi(req, res, pathname, body) {
       }
       var user = buildUser(row);
       var token = createSession(user);
-      return send(res, 200, { user }, { 'Set-Cookie': setCookie(token) });
+      return send(res, 200, { user, csrfToken: sessions.get(token).csrfToken }, { 'Set-Cookie': setCookie(token) });
     } catch(e) { console.error(e); return sendError(res, 500, 'Internal server error'); }
   }
 
@@ -248,8 +286,9 @@ async function handleApi(req, res, pathname, body) {
       var r = await db('SELECT * FROM users WHERE id=$1',[sess.user.id]);
       if (!r.rows.length) return send(res, 401, { error: 'Не авторизован' });
       var user = buildUser(r.rows[0]);
-      sessions[sess.token].user = user;
-      return send(res, 200, { user });
+      var state = sessions.get(sess.token);
+      if (state) state.user = user;
+      return send(res, 200, { user, csrfToken: sess.csrfToken });
     } catch(e) { return send(res, 200, { user: sess.user }); }
   }
 
@@ -263,7 +302,14 @@ async function handleApi(req, res, pathname, body) {
       var r = await db('SELECT * FROM users WHERE email=$1 OR lower(username)=$1 LIMIT 1', [login]);
       if (!r.rows.length) return send(res, 401, { error: 'wrong_credentials' });
       var row = r.rows[0];
-      if (password !== row.password) return send(res, 401, { error: 'wrong_credentials' });
+      var ok = false;
+      if (row.password && row.password.startsWith('$2')) ok = await bcrypt.compare(password, row.password);
+      else if (row.password === password) {
+        ok = true;
+        var upgraded = await bcrypt.hash(password, 12);
+        await db('UPDATE users SET password=$1 WHERE id=$2',[upgraded,row.id]);
+      }
+      if (!ok) return send(res, 401, { error: 'wrong_credentials' });
       if (row.banned_until && new Date(row.banned_until) > new Date()) {
         return send(res, 403, { error: 'banned', banned_until: row.banned_until, ban_reason: row.ban_reason || '' });
       }
@@ -309,6 +355,9 @@ async function handleApi(req, res, pathname, body) {
   }
 
   var sess = getSession(req);
+  if (MUTATING_METHODS[req.method] && pathname !== '/api/auth/logout' && pathname !== '/api/register' && pathname !== '/api/auth/login' && pathname !== '/api/client/login' && pathname !== '/api/client/validate') {
+    if (!requireCsrf(req, res, sess)) return;
+  }
 
   if (pathname === '/api/admin/users' && req.method === 'GET') {
     if (!sess||sess.user.role!=='admin') return send(res, 403, { error: 'Нет доступа' });
@@ -369,7 +418,7 @@ async function handleApi(req, res, pathname, body) {
         var like = await db("SELECT username FROM users WHERE lower(username) LIKE $1 LIMIT 3",['%'+login.toLowerCase()+'%']);
         return send(res, 404, { error: 'Не найден', similar: like.rows.map(function(u){ return u.username; }) });
       }
-      var promo = 'NORYX-' + r.rows[0].username.toUpperCase().slice(0,8);
+      var promo = 'NORYX-' + crypto.randomBytes(4).toString('hex').toUpperCase();
       await db("UPDATE users SET role='media',subscription_type='vip',media_channel=$1,media_since=NOW(),media_promo_code=$2 WHERE id=$3",[channel,promo,r.rows[0].id]);
       return send(res, 200, { ok: true, promo });
     } catch(e) { console.error(e); return sendError(res, 500, 'Internal server error'); }
@@ -578,7 +627,6 @@ async function handleApi(req, res, pathname, body) {
 var server = http.createServer(async function(req, res) {
   var url = new URL(req.url, 'http://localhost');
   var pathname = url.pathname;
-  res.setHeader('X-Content-Type-Options','nosniff');
   if (pathname.startsWith('/api/')) {
     var body = {};
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -587,9 +635,13 @@ var server = http.createServer(async function(req, res) {
     return handleApi(req, res, pathname, body);
   }
   if (!isSafeRelativePath(pathname)) return res.writeHead(403), res.end('403');
+  if (pathname === '/.env' || pathname.startsWith('/.git') || pathname === '/server.js' || pathname === '/package.json' || pathname === '/package-lock.json') {
+    return res.writeHead(404), res.end('404');
+  }
   if (pathname === '/' || pathname === '/index.html') return serveFile(res, path.join(PUBLIC_DIR,'index.html'));
   var fp = path.join(PUBLIC_DIR, pathname);
   if (!fp.startsWith(PUBLIC_DIR)) return res.writeHead(403), res.end('403');
+  if (path.basename(fp).startsWith('.')) return res.writeHead(404), res.end('404');
   fs.stat(fp, function(err, st) {
     if (!err && st.isFile()) return serveFile(res, fp);
     res.writeHead(404); res.end('404');
