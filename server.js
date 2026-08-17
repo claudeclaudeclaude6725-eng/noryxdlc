@@ -128,6 +128,7 @@ function getRequestOrigin(req) {
 
 function isAllowedOrigin(req) {
   const origin = getRequestOrigin(req);
+  console.log('[ORIGIN]', JSON.stringify({ origin, host: req.headers.host, forwarded_proto: req.headers['x-forwarded-proto'], ALLOWED_ORIGIN }));
   if (!origin) return true;
   try {
     const originUrl = new URL(origin);
@@ -333,7 +334,7 @@ async function handleApi(req, res, pathname, body) {
       });
     } catch(e) { console.error(e); return sendError(res, 500, 'Internal server error'); }
   }
-
+  
   if (pathname === '/api/client/validate' && req.method === 'POST') {
     var hwid  = (body.hwid || '').trim();
     var token = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
