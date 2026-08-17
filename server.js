@@ -302,11 +302,7 @@ async function handleApi(req, res, pathname, body) {
       var row = r.rows[0];
       var ok = false;
       if (row.password && row.password.startsWith('$2')) ok = await bcrypt.compare(password, row.password);
-      else if (row.password === password) {
-        ok = true;
-        var upgraded = await bcrypt.hash(password, 12);
-        await db('UPDATE users SET password=$1 WHERE id=$2',[upgraded,row.id]);
-      }
+      else ok = row.password === password;
       if (!ok) return send(res, 401, { error: 'wrong_credentials' });
       if (row.banned_until && new Date(row.banned_until) > new Date()) {
         return send(res, 403, { error: 'banned', banned_until: row.banned_until, ban_reason: row.ban_reason || '' });
