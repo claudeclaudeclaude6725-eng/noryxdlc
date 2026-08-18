@@ -180,12 +180,6 @@ async function db(sql, p) {
   try { return await c.query(sql, p); } finally { c.release(); }
 }
 
-function genKey(prefix) {
-  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  var seg = function() { return crypto.randomBytes(4).toString('hex').toUpperCase().slice(0, 4).replace(/[^A-Z0-9]/g, 'A'); };
-  return prefix + '-' + seg() + '-' + seg() + '-' + seg() + '-' + seg();
-}
-
 function buildUser(row) {
   return {
     id: row.id, username: row.username, email: row.email, role: row.role,
@@ -435,71 +429,6 @@ async function handleApi(req, res, pathname, body) {
       var total = await db("SELECT COUNT(*) FROM users WHERE role='media'",[]);
       var r = await db("SELECT id,username,media_balance,media_channel,media_since FROM users WHERE role='media' ORDER BY id DESC LIMIT $1 OFFSET $2",[limit,offset]);
       return send(res, 200, { media: r.rows, total: parseInt(total.rows[0].count), page, limit });
-    } catch(e) { console.error(e); return sendError(res, 500, 'Internal server error'); }
-  }
-
-  if (pathname === '/api/admin/role-keys' && req.method === 'GET') {
-    if (!sess||sess.user.role!=='admin') return send(res, 403, { error: 'Нет доступа' });
-    try {
-      var r = await db('SELECT * FROM role_keys ORDER BY created_at DESC',[]);
-      return send(res, 200, { keys: r.rows });
-    } catch(e) { console.error(e); return sendError(res, 500, 'Internal server error'); }
-  }
-  if (pathname === '/api/admin/role-keys/create' && req.method === 'POST') {
-    if (!sess||sess.user.role!=='admin') return send(res, 403, { error: 'Нет доступа' });
-    var { roleName, roleColor, duration } = body;
-    if (!roleName||!roleColor||!duration) return send(res, 400, { error: 'Все поля обязательны' });
-    try {
-      var key = genKey('ROLE');
-      await db('INSERT INTO role_keys (key,role_name,role_color,duration) VALUES ($1,$2,$3,$4)',[key,roleName,roleColor,duration]);
-      return send(res, 200, { ok: true, key });
-    } catch(e) { console.error(e); return sendError(res, 500, 'Internal server error'); }
-  }
-
-  if (pathname === '/api/admin/prefix-keys' && req.method === 'GET') {
-    if (!sess||sess.user.role!=='admin') return send(res, 403, { error: 'Нет доступа' });
-    try {
-      var r = await db('SELECT * FROM prefix_keys ORDER BY created_at DESC',[]);
-      return send(res, 200, { keys: r.rows });
-    } catch(e) { console.error(e); return sendError(res, 500, 'Internal server error'); }
-  }
-
-  if (pathname === '/api/admin/prefix-keys/create' && req.method === 'POST') {
-    if (!sess||sess.user.role!=='admin') return send(res, 403, { error: 'Нет доступа' });
-    var { prefixText, prefixColor } = body;
-    if (!prefixText||!prefixColor) return send(res, 400, { error: 'Введите текст и цвет' });
-    try {
-      var key = genKey('PFX');
-      await db('INSERT INTO prefix_keys (key,prefix_text,prefix_color) VALUES ($1,$2,$3)',[key,prefixText,prefixColor]);
-      return send(res, 200, { ok: true, key });
-    } catch(e) { console.error(e); return sendError(res, 500, 'Internal server error'); }
-  }
-
-  if (pathname === '/api/keys/activate' && req.method === 'POST') {
-    if (!sess) return send(res, 401, { error: 'Не авторизован' });
-    var keyUp = (body.key||'').trim().toUpperCase();
-    if (!keyUp) return send(res, 400, { error: 'Введите ключ' });
-    try {
-      if (keyUp.startsWith('ROLE-')) {
-        var r = await db('SELECT * FROM role_keys WHERE key=$1 AND used=FALSE LIMIT 1',[keyUp]);
-        if (!r.rows.length) return send(res, 404, { error: 'Ключ не найден или использован' });
-        var k = r.rows[0];
-        var exAt = null;
-        var dm = { '7D':7,'30D':30,'90D':90,'180D':180 };
-        if (k.duration !== 'LIFETIME') exAt = new Date(Date.now()+(dm[k.duration]||30)*864e5);
-        await db('UPDATE role_keys SET used=TRUE,used_by=$1,used_at=NOW() WHERE id=$2',[sess.user.id,k.id]);
-        await db('UPDATE users SET role=$1,subscription_type=$1,subscription_expires_at=$2 WHERE id=$3',[k.role_name.toLowerCase(),exAt,sess.user.id]);
-        return send(res, 200, { ok: true, type: 'role', roleName: k.role_name });
-      }
-      if (keyUp.startsWith('PFX-')) {
-        var r = await db('SELECT * FROM prefix_keys WHERE key=$1 AND used=FALSE LIMIT 1',[keyUp]);
-        if (!r.rows.length) return send(res, 404, { error: 'Ключ не найден или использован' });
-        var k = r.rows[0];
-        await db('UPDATE prefix_keys SET used=TRUE,used_by=$1,used_at=NOW() WHERE id=$2',[sess.user.id,k.id]);
-        await db('UPDATE users SET prefix=$1,prefix_color=$2 WHERE id=$3',[k.prefix_text,k.prefix_color,sess.user.id]);
-        return send(res, 200, { ok: true, type: 'prefix', prefix: k.prefix_text, prefixColor: k.prefix_color });
-      }
-      return send(res, 400, { error: 'Неверный формат ключа' });
     } catch(e) { console.error(e); return sendError(res, 500, 'Internal server error'); }
   }
 
