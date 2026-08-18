@@ -28,10 +28,6 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
       Промокоды
     </button>
-    <button class="sidebar-item" onclick="adminTab('keys',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-      Создание ключей
-    </button>
     <button class="sidebar-item" onclick="adminTab('give-media',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
       Выдать MEDIA
@@ -86,96 +82,6 @@
             <button class="btn-primary" onclick="createPromo()">Создать</button>
           </div>
         </div>
-      </div>
-    </div>
-
-    <div id="atab-keys" class="admin-tab" style="display:none">
-      <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
-
-        <div class="glass-card" style="flex:1;min-width:300px">
-          <h3 class="admin-card-title">Ключ для роли</h3>
-          <div style="display:flex;flex-direction:column;gap:14px">
-            <div>
-              <label class="admin-label">Роль</label>
-              <select class="input-field" id="role-name">
-                <option value="beta">⭐ Beta</option>
-                <option value="alpha">💎 Alpha</option>
-                <option value="vip">👑 VIP</option>
-                <option value="media">🎥 MEDIA</option>
-                <option value="moderator">🛡️ Модератор</option>
-              </select>
-            </div>
-            <div>
-              <label class="admin-label">Цвет роли</label>
-              <select class="input-field" id="role-color">
-                <option value="pink">🌸 Розовый</option>
-                <option value="red">🔴 Красный</option>
-                <option value="purple">🟣 Фиолетовый</option>
-                <option value="green">🟢 Зелёный</option>
-                <option value="gray">⚫ Серый</option>
-                <option value="blue">🔵 Синий</option>
-                <option value="black">⬛ Чёрный</option>
-                <option value="white">⬜ Белый</option>
-              </select>
-            </div>
-            <div>
-              <label class="admin-label">Срок</label>
-              <select class="input-field" id="role-duration">
-                <option value="7D">7 дней</option>
-                <option value="30D">30 дней</option>
-                <option value="90D">90 дней</option>
-                <option value="180D">180 дней</option>
-                <option value="LIFETIME">Навсегда</option>
-              </select>
-            </div>
-            <p id="role-key-err" style="font-size:13px;display:none"></p>
-            <button class="btn-primary" onclick="createRoleKey()">Создать</button>
-            <div id="role-key-result" style="display:none">
-              <label class="admin-label">Ключ (виден 5 мин):</label>
-              <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-                <code class="key-display" id="role-key-output"></code>
-                <button class="btn-secondary" style="padding:8px 14px;font-size:13px;flex-shrink:0" onclick="copyKey('role-key-output')">Копировать</button>
-              </div>
-              <p id="role-key-output-copy-msg" style="font-size:12px;color:var(--success);display:none;margin-top:4px">✓ Скопировано!</p>
-            </div>
-          </div>
-          <div style="margin-top:28px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.08)">
-            <h4 style="font-size:14px;color:rgba(255,255,255,0.4);margin-bottom:14px">Созданные ключи ролей</h4>
-            <div id="role-keys-list"><p style="color:rgba(255,255,255,0.3);font-size:13px">Загрузка...</p></div>
-          </div>
-        </div>
-
-        <div class="glass-card" style="flex:1;min-width:300px">
-          <h3 class="admin-card-title">Ключ для префикса</h3>
-          <div style="display:flex;flex-direction:column;gap:14px">
-            <div>
-              <label class="admin-label">Текст префикса</label>
-              <input class="input-field" id="prefix-text" placeholder="Например: NoryxDLC"/>
-            </div>
-            <div>
-              <label class="admin-label">Цвет префикса</label>
-              <div style="display:flex;gap:10px;align-items:center">
-                <input type="color" id="prefix-color" value="#7C3AED" style="width:48px;height:42px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:none;cursor:pointer;padding:2px"/>
-                <span id="prefix-color-label" style="font-size:14px;color:rgba(255,255,255,0.5)">#7C3AED</span>
-              </div>
-            </div>
-            <p id="prefix-key-err" style="font-size:13px;display:none"></p>
-            <button class="btn-primary" onclick="createPrefixKey()">Создать</button>
-            <div id="prefix-key-result" style="display:none">
-              <label class="admin-label">Ключ (виден 5 мин):</label>
-              <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-                <code class="key-display" id="prefix-key-output"></code>
-                <button class="btn-secondary" style="padding:8px 14px;font-size:13px;flex-shrink:0" onclick="copyKey('prefix-key-output')">Копировать</button>
-              </div>
-              <p id="prefix-key-output-copy-msg" style="font-size:12px;color:var(--success);display:none;margin-top:4px">✓ Скопировано!</p>
-            </div>
-          </div>
-          <div style="margin-top:28px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.08)">
-            <h4 style="font-size:14px;color:rgba(255,255,255,0.4);margin-bottom:14px">Созданные ключи префиксов</h4>
-            <div id="prefix-keys-list"><p style="color:rgba(255,255,255,0.3);font-size:13px">Загрузка...</p></div>
-          </div>
-        </div>
-
       </div>
     </div>
 
@@ -273,9 +179,6 @@
 
 <script src="/js/admin.js"></script>
 <script>
-document.getElementById('prefix-color').addEventListener('input', function() {
-  document.getElementById('prefix-color-label').textContent = this.value;
-});
 document.getElementById('media-card-modal').addEventListener('click', function(e) {
   if (e.target === this) closeMediaCard();
 });

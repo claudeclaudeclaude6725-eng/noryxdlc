@@ -27,10 +27,6 @@
       Аккаунт
     </button>
 
-    <button class="sidebar-item" onclick="switchTab('keys',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-      Активация ключа
-    </button>
     <button class="sidebar-item" onclick="switchTab('shop',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
       Магазин
@@ -115,18 +111,6 @@
     </div>
 
 
-
-    <div id="tab-keys" class="tab-content" style="display:none">
-      <h1 class="dash-title">Активация ключа</h1>
-      <div class="glass-card" style="max-width:480px">
-        <p style="color:rgba(255,255,255,0.45);margin-bottom:20px;font-size:14px">Введите ключ роли (ROLE-...) или ключ префикса (PFX-...).</p>
-        <div style="display:flex;flex-direction:column;gap:14px">
-          <input type="text" class="input-field" id="key-input" placeholder="ROLE-XXXX-XXXX-XXXX-XXXX" style="text-transform:uppercase;letter-spacing:1px;font-family:monospace"/>
-          <button class="btn-primary" onclick="activateKey()">Активировать</button>
-          <p id="key-activate-msg" style="font-size:14px;display:none"></p>
-        </div>
-      </div>
-    </div>
 
     <div id="tab-shop" class="tab-content" style="display:none">
       <h1 class="dash-title">Магазин</h1>
@@ -248,16 +232,8 @@ function renderDownloadButtons(user) {
   var wrap = document.getElementById('download-buttons');
   if (!wrap) return;
   var sub = (user.subscriptionType || '').toLowerCase();
-  var hasBeta  = sub === 'beta' || sub === 'betalife' || sub === 'beta7' || sub === 'beta30' || sub === 'beta90' || sub === 'beta180' || sub === 'vip' || user.role === 'admin';
   var hasAlpha = sub === 'alpha' || sub === 'alphalife' || sub === 'alpha7' || sub === 'alpha30' || sub === 'alpha90' || sub === 'alpha180' || sub === 'vip' || user.role === 'admin';
   wrap.innerHTML = '';
-  if (hasBeta) {
-    var a = document.createElement('a');
-    a.href = '#'; a.className = 'btn-primary'; a.target = '_blank';
-    a.style.cssText = 'text-align:center;background:linear-gradient(135deg,#F59E0B,#D97706)';
-    a.textContent = '⬇ Скачать BETA';
-    wrap.appendChild(a);
-  }
   if (hasAlpha) {
     var a2 = document.createElement('a');
     a2.href = '#'; a2.className = 'btn-primary'; a2.target = '_blank';
@@ -265,7 +241,7 @@ function renderDownloadButtons(user) {
     a2.textContent = '⬇ Скачать Alpha';
     wrap.appendChild(a2);
   }
-  if (!hasBeta && !hasAlpha) {
+  if (!hasAlpha) {
     wrap.innerHTML = '<p style="color:rgba(255,255,255,0.3)">Нет доступных версий для скачивания.</p>';
   }
 }
