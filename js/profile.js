@@ -1,23 +1,17 @@
 var currentUser = null;
 
 var ROLE_LABELS = {
-  'user':'Юзер','beta':'Beta','alpha':'Alpha',
+  'user':'Юзер','alpha':'Alpha',
   'vip':'VIP','media':'MEDIA','moderator':'Модератор','admin':'Админ'
 };
 
 var SHOP_ITEMS = [
-  { cat:'beta',   name:'BETA — 7 дней',    price:45,  dur:'7d',       type:'beta7' },
-  { cat:'beta',   name:'BETA — 30 дней',   price:90,  dur:'30 дней',  type:'beta30' },
-  { cat:'beta',   name:'BETA — 90 дней',   price:180, dur:'90 дней',  type:'beta90' },
-  { cat:'beta',   name:'BETA — 180 дней',  price:230, dur:'180 дней', type:'beta180' },
-  { cat:'beta',   name:'BETA — LIFETIME',  price:300, dur:'Навсегда', type:'betalife', lifetime:true },
   { cat:'alpha',  name:'Alpha — 7 дней',   price:80,  dur:'7 дней',   type:'alpha7' },
   { cat:'alpha',  name:'Alpha — 30 дней',  price:140, dur:'30 дней',  type:'alpha30' },
   { cat:'alpha',  name:'Alpha — 90 дней',  price:220, dur:'90 дней',  type:'alpha90' },
   { cat:'alpha',  name:'Alpha — 180 дней', price:300, dur:'180 дней', type:'alpha180' },
   { cat:'alpha',  name:'Alpha — LIFETIME', price:350, dur:'Навсегда', type:'alphalife', lifetime:true },
   { cat:'other',  name:'Сброс HWID',       price:75,  dur:'Разово',   type:'hwid', reqSub:true },
-  { cat:'other',  name:'Докупить Alpha',   price:50,  dur:'Разово',   type:'addAlpha', reqSub:'betalife' },
   { cat:'other',  name:'Префикс',          price:50,  dur:'Навсегда', type:'prefix' }
 ];
 
@@ -42,6 +36,7 @@ async function loadProfile() {
     if (r.ok) {
       var data = await r.json();
       currentUser = data.user;
+      if (data.csrfToken) localStorage.setItem('noryx_csrf', data.csrfToken);
       localStorage.setItem('noryx_user', JSON.stringify(currentUser));
       renderProfile(currentUser);
       return;
@@ -54,6 +49,13 @@ async function loadProfile() {
 
 function getStoredUser() {
   try { var u = localStorage.getItem('noryx_user'); return u ? JSON.parse(u) : null; } catch(e) { return null; }
+}
+function getCsrfToken() { return localStorage.getItem('noryx_csrf') || ''; }
+function csrfHeaders() {
+  var headers = { 'Content-Type': 'application/json' };
+  var token = getCsrfToken();
+  if (token) headers['X-CSRF-Token'] = token;
+  return headers;
 }
 
 function renderProfile(u) {
@@ -80,7 +82,7 @@ function renderProfile(u) {
   var subEl = document.getElementById('prof-sub');
   if (subEl) {
     if (hasSub) {
-      var label = u.subscriptionType === 'vip' ? 'VIP' : u.subscriptionType === 'alphalife' || u.subscriptionType === 'alpha' ? 'Alpha' : 'Beta';
+      var label = u.subscriptionType === 'vip' ? 'VIP' : 'Alpha';
       var expText = u.subscriptionExpiresAt ? ' до ' + new Date(u.subscriptionExpiresAt).toLocaleDateString('ru-RU') : ' — Навсегда';
       subEl.innerHTML = '<span style="color:var(--success);font-weight:600">✅ ' + label + expText + '</span>';
     } else {
@@ -108,9 +110,9 @@ function renderShop(u) {
   if (!grid) return;
   grid.innerHTML = '';
 
-  var cats = ['beta', 'alpha', 'other'];
-  var catLabels = { beta:'BETA', alpha:'Alpha', other:'Другое' };
-  var catColors = { beta:'#F59E0B', alpha:'#7C3AED', other:'#6B7280' };
+  var cats = ['alpha', 'other'];
+  var catLabels = { alpha:'Alpha', other:'Другое' };
+  var catColors = { alpha:'#7C3AED', other:'#6B7280' };
 
   cats.forEach(function(cat) {
     var items = SHOP_ITEMS.filter(function(i) { return i.cat === cat; });
@@ -180,7 +182,7 @@ async function applyPromo() {
   try {
     var r = await fetch('/api/promos/check', {
       method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: csrfHeaders(),
       body: JSON.stringify({ code })
     });
     var data = await r.json();
@@ -197,35 +199,6 @@ function setMsg(el, text, color) {
   el.textContent = text; el.style.color = color; el.style.display = 'block';
 }
 
-async function activateKey() {
-  var input = document.getElementById('key-input');
-  if (!input) return;
-  var key = input.value.trim().toUpperCase();
-  if (!key) { showKeyMsg('Введите ключ', '#EF4444'); return; }
-  try {
-    var r = await fetch('/api/keys/activate', {
-      method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key })
-    });
-    var data = await r.json();
-    if (!r.ok) { showKeyMsg(data.error || 'Ошибка', '#EF4444'); return; }
-    if (data.type === 'role') showKeyMsg('✓ Роль "' + data.roleName + '" активирована!', 'var(--success)');
-    else if (data.type === 'prefix') showKeyMsg('✓ Префикс "' + data.prefix + '" активирован!', 'var(--success)');
-    input.value = '';
-    setTimeout(loadProfile, 1500);
-  } catch(e) { showKeyMsg('Ошибка сети', '#EF4444'); }
-}
-
-function showKeyMsg(text, color) {
-  var el = document.getElementById('key-activate-msg');
-  if (!el) return;
-  el.textContent = text; el.style.color = color; el.style.display = 'block';
-  setTimeout(function() { el.style.display = 'none'; }, 4000);
-}
-
-
-
 function renderMediaPanel(u) {
   setText('media-username', u.username);
   setText('media-promo-used', '—');
@@ -240,7 +213,7 @@ async function requestWithdrawal() {
   try {
     var r = await fetch('/api/withdrawals/request', {
       method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: csrfHeaders(),
       body: JSON.stringify({ amount })
     });
     var data = await r.json();
@@ -295,7 +268,8 @@ function switchTab(name, btn) {
 function setText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function doLogout() {
-  fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(function(){});
+  fetch('/api/auth/logout', { method: 'POST', credentials: 'include', headers: csrfHeaders() }).catch(function(){});
   localStorage.removeItem('noryx_user');
+  localStorage.removeItem('noryx_csrf');
   window.location.href = '/';
 }

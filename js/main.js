@@ -74,6 +74,7 @@ function updateHeaderAuth() {
     .then(function (data) {
       if (data && data.user) {
         setStoredUser(data.user);
+        if (data.csrfToken) localStorage.setItem('noryx_csrf', data.csrfToken);
         authDiv.innerHTML = '<a href="/html/profile.html" style="color:var(--success);font-weight:700;font-size:15px;padding:7px 18px;border-radius:9999px;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.2)">' + esc(data.user.username) + '</a>';
       } else {
         authDiv.innerHTML = '<a href="/html/login.html" class="di-login">Войти</a>';
@@ -82,6 +83,13 @@ function updateHeaderAuth() {
     .catch(function () {
       authDiv.innerHTML = '<a href="/html/login.html" class="di-login">Войти</a>';
     });
+}
+
+function csrfHeaders() {
+  var headers = { 'Content-Type': 'application/json' };
+  var token = localStorage.getItem('noryx_csrf');
+  if (token) headers['X-CSRF-Token'] = token;
+  return headers;
 }
 
 function openGlobalModal(name, sub, price) {
@@ -111,7 +119,7 @@ async function applyPromoGlobal() {
   try {
     var r = await fetch('/api/promos/check', {
       method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: csrfHeaders(),
       body: JSON.stringify({ code })
     });
     var data = await r.json();

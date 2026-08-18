@@ -1,4 +1,11 @@
 var adminCurrentPage = { users: 1, media: 1 };
+function getCsrfToken() { return localStorage.getItem('noryx_csrf') || ''; }
+function csrfHeaders() {
+  var headers = { 'Content-Type': 'application/json' };
+  var token = getCsrfToken();
+  if (token) headers['X-CSRF-Token'] = token;
+  return headers;
+}
 
 document.addEventListener('DOMContentLoaded', function () {
   applyStoredTheme();
@@ -28,6 +35,7 @@ async function checkAdminAccess() {
     var r = await fetch('/api/auth/me', { credentials: 'include' });
     if (!r.ok) { window.location.href = '/html/login.html'; return; }
     var data = await r.json();
+    if (data.csrfToken) localStorage.setItem('noryx_csrf', data.csrfToken);
     if ((data.user || data).role !== 'admin') { window.location.href = '/html/profile.html'; return; }
     adminTab('users', document.querySelector('.sidebar-item'));
     loadUsers(1);
@@ -41,14 +49,13 @@ function adminTab(name, btn) {
   if (tab) tab.style.display = '';
   if (btn) btn.classList.add('active');
   var titles = {
-    users:'Пользователи', promos:'Промокоды', keys:'Создание ключей',
+    users:'Пользователи', promos:'Промокоды',
     media:'Управление MEDIA', ban:'Заблокировать юзера',
     'give-media':'Выдать MEDIA', withdrawals:'Выводы MEDIA'
   };
   setText('admin-title', titles[name] || name);
   if (name === 'users') loadUsers(adminCurrentPage.users);
   if (name === 'promos') loadPromos();
-  if (name === 'keys') { loadRoleKeys(); loadPrefixKeys(); }
   if (name === 'media') loadMedia(adminCurrentPage.media);
   if (name === 'ban') loadBanned();
   if (name === 'withdrawals') loadWithdrawals();
@@ -69,7 +76,7 @@ function renderUsers(users, total, page, limit) {
   if (!users.length) {
     tbody.innerHTML = '<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.3)">Нет пользователей</div>';
   } else {
-    var ROLE_COLORS = { admin:'#EF4444', media:'#A855F7', moderator:'#3B82F6', vip:'#F59E0B', alpha:'#7C3AED', beta:'#F59E0B', user:'#6B7280' };
+    var ROLE_COLORS = { admin:'#EF4444', media:'#A855F7', moderator:'#3B82F6', vip:'#F59E0B', alpha:'#7C3AED', user:'#6B7280' };
     tbody.innerHTML = '';
     users.forEach(function(u) {
       var rColor = ROLE_COLORS[u.role] || '#6B7280';
@@ -137,7 +144,7 @@ async function createPromo() {
   try {
     var r = await fetch('/api/admin/promos/create', {
       method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: csrfHeaders(),
       body: JSON.stringify({ code, discount, ownerLogin: ownerLogin || undefined, isGlobal })
     });
     var data = await r.json();
@@ -154,86 +161,6 @@ async function createPromo() {
   } catch(e) { showEl(errEl, 'Ошибка сети', '#EF4444'); }
 }
 
-async function createRoleKey() {
-  var roleName  = (document.getElementById('role-name').value || '').trim();
-  var roleColor = document.getElementById('role-color').value || '';
-  var duration  = document.getElementById('role-duration').value || '';
-  var errEl = document.getElementById('role-key-err');
-  var resEl = document.getElementById('role-key-result');
-  if (!roleName || !duration) { showEl(errEl, 'Заполните все поля', '#EF4444'); resEl.style.display='none'; return; }
-  try {
-    var r = await fetch('/api/admin/role-keys/create', {
-      method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ roleName, roleColor, duration })
-    });
-    var data = await r.json();
-    if (!r.ok) { showEl(errEl, data.error, '#EF4444'); resEl.style.display='none'; return; }
-    errEl.style.display = 'none';
-    document.getElementById('role-key-output').textContent = data.key;
-    resEl.style.display = 'block';
-    loadRoleKeys();
-    setTimeout(function() { resEl.style.display = 'none'; }, 5 * 60 * 1000);
-  } catch(e) { showEl(errEl, 'Ошибка сети', '#EF4444'); }
-}
-
-async function createPrefixKey() {
-  var prefixText  = (document.getElementById('prefix-text').value || '').trim();
-  var prefixColor = document.getElementById('prefix-color').value || '#ffffff';
-  var errEl = document.getElementById('prefix-key-err');
-  var resEl = document.getElementById('prefix-key-result');
-  if (!prefixText) { showEl(errEl, 'Введите текст префикса', '#EF4444'); resEl.style.display='none'; return; }
-  try {
-    var r = await fetch('/api/admin/prefix-keys/create', {
-      method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prefixText, prefixColor })
-    });
-    var data = await r.json();
-    if (!r.ok) { showEl(errEl, data.error, '#EF4444'); resEl.style.display='none'; return; }
-    errEl.style.display = 'none';
-    document.getElementById('prefix-key-output').textContent = data.key;
-    resEl.style.display = 'block';
-    loadPrefixKeys();
-    setTimeout(function() { resEl.style.display = 'none'; }, 5 * 60 * 1000);
-  } catch(e) { showEl(errEl, 'Ошибка сети', '#EF4444'); }
-}
-
-async function loadRoleKeys() {
-  try {
-    var r = await fetch('/api/admin/role-keys', { credentials: 'include' });
-    var data = await r.json();
-    renderKeyList('role-keys-list', data.keys || []);
-  } catch(e) {}
-}
-
-async function loadPrefixKeys() {
-  try {
-    var r = await fetch('/api/admin/prefix-keys', { credentials: 'include' });
-    var data = await r.json();
-    renderKeyList('prefix-keys-list', data.keys || []);
-  } catch(e) {}
-}
-
-function renderKeyList(id, keys) {
-  var el = document.getElementById(id);
-  if (!el) return;
-  if (!keys.length) { el.innerHTML = '<p style="color:rgba(255,255,255,0.3);font-size:13px">Ключей нет</p>'; return; }
-  el.innerHTML = '';
-  keys.forEach(function(k) {
-    var div = document.createElement('div');
-    div.style.cssText = 'padding:10px 14px;border:1px solid rgba(255,255,255,0.08);border-radius:10px;margin-bottom:8px';
-    var usedColor = k.used ? '#EF4444' : 'var(--success)';
-    div.innerHTML =
-      '<code style="font-size:12px;letter-spacing:1px;color:#fff;word-break:break-all">' + esc(k.key) + '</code>' +
-      '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px">' +
-        (k.role_name ? 'Роль: <b style="color:#fff">' + esc(k.role_name) + '</b> | Срок: ' + esc(k.duration) : 'Префикс: <b style="color:#fff">' + esc(k.prefix_text || '') + '</b>') +
-        ' | <span style="color:' + usedColor + '">' + (k.used ? 'Использован' : 'Активен') + '</span>' +
-      '</div>';
-    el.appendChild(div);
-  });
-}
-
 async function giveMedia() {
   var login = (document.getElementById('give-media-login').value || '').trim();
   var channel = (document.getElementById('give-media-channel').value || '').trim();
@@ -242,7 +169,7 @@ async function giveMedia() {
   try {
     var r = await fetch('/api/admin/give-media', {
       method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: csrfHeaders(),
       body: JSON.stringify({ login, channel })
     });
     var data = await r.json();
@@ -305,7 +232,7 @@ async function removeMedia() {
   try {
     await fetch('/api/admin/remove-media', {
       method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: csrfHeaders(),
       body: JSON.stringify({ userId: uid })
     });
     closeMediaCard();
@@ -321,7 +248,7 @@ async function giveBalance() {
   try {
     var r = await fetch('/api/admin/give-balance', {
       method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: csrfHeaders(),
       body: JSON.stringify({ userId: uid, amount })
     });
     if (!r.ok) { showEl(errEl, 'Ошибка', '#EF4444'); return; }
@@ -339,7 +266,7 @@ async function banUser() {
   try {
     var r = await fetch('/api/admin/ban', {
       method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: csrfHeaders(),
       body: JSON.stringify({ login, duration, reason })
     });
     var data = await r.json();
@@ -385,7 +312,7 @@ async function unbanUser(id, username) {
   try {
     await fetch('/api/admin/unban', {
       method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: csrfHeaders(),
       body: JSON.stringify({ userId: id })
     });
     loadBanned();
@@ -428,7 +355,7 @@ async function acceptWithdrawal(id, btn) {
   try {
     var r = await fetch('/api/admin/withdrawals/accept', {
       method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: csrfHeaders(),
       body: JSON.stringify({ id })
     });
     if (r.ok) loadWithdrawals();
@@ -447,20 +374,11 @@ async function sendReject(id) {
   try {
     var r = await fetch('/api/admin/withdrawals/reject', {
       method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: csrfHeaders(),
       body: JSON.stringify({ id, reason })
     });
     if (r.ok) loadWithdrawals();
   } catch(e) { alert('Ошибка'); }
-}
-
-function copyKey(id) {
-  var el = document.getElementById(id);
-  if (!el) return;
-  navigator.clipboard.writeText(el.textContent).then(function() {
-    var msg = document.getElementById(id + '-copy-msg');
-    if (msg) { msg.style.display = 'block'; setTimeout(function() { msg.style.display = 'none'; }, 2000); }
-  });
 }
 
 function showEl(el, text, color) {

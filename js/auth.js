@@ -3,6 +3,14 @@ function getStoredUser() {
 }
 function setStoredUser(u) { localStorage.setItem('noryx_user', JSON.stringify(u)); }
 function clearStoredUser() { localStorage.removeItem('noryx_user'); }
+function setCsrfToken(token) { if (token) localStorage.setItem('noryx_csrf', token); }
+function getCsrfToken() { return localStorage.getItem('noryx_csrf') || ''; }
+function authHeaders() {
+  var h = { 'Content-Type': 'application/json' };
+  var csrf = getCsrfToken();
+  if (csrf) h['X-CSRF-Token'] = csrf;
+  return h;
+}
 
 function showError(id, msg) { var el = document.getElementById(id); if (el) { el.textContent = msg; el.style.display = 'block'; } }
 function hideError(id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; }
@@ -14,12 +22,13 @@ async function doLogin() {
   if (!loginVal || !password) { showError('login-error', 'Заполните все поля'); return; }
   try {
     var r = await fetch('/api/auth/login', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      method: 'POST', headers: authHeaders(), credentials: 'include',
       body: JSON.stringify({ login: loginVal, password })
     });
     var data = await r.json();
     if (!r.ok) { showError('login-error', data.error || 'Ошибка входа'); return; }
     if (data.user) setStoredUser(data.user);
+    if (data.csrfToken) setCsrfToken(data.csrfToken);
     window.location.href = '/html/profile.html';
   } catch(e) { showError('login-error', 'Ошибка сети'); }
 }
@@ -32,19 +41,21 @@ async function doRegister() {
   if (!username || !email || !password) { showError('reg-error', 'Заполните все поля'); return; }
   try {
     var r = await fetch('/api/register', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      method: 'POST', headers: authHeaders(), credentials: 'include',
       body: JSON.stringify({ username, email, password })
     });
     var data = await r.json();
     if (!r.ok) { showError('reg-error', data.error || 'Ошибка регистрации'); return; }
     if (data.user) setStoredUser(data.user);
+    if (data.csrfToken) setCsrfToken(data.csrfToken);
     window.location.href = '/html/profile.html';
   } catch(e) { showError('reg-error', 'Ошибка сети'); }
 }
 
 async function doLogout() {
-  try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch(e) {}
+  try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include', headers: authHeaders() }); } catch(e) {}
   clearStoredUser();
+  localStorage.removeItem('noryx_csrf');
   window.location.href = '/';
 }
 
