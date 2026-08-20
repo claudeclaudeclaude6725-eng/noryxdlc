@@ -27,6 +27,10 @@
       Аккаунт
     </button>
 
+    <button class="sidebar-item" onclick="switchTab('keys',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+      Активация ключа
+    </button>
     <button class="sidebar-item" onclick="switchTab('shop',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
       Магазин
@@ -112,6 +116,18 @@
 
 
 
+    <div id="tab-keys" class="tab-content" style="display:none">
+      <h1 class="dash-title">Активация ключа</h1>
+      <div class="glass-card" style="max-width:480px">
+        <p style="color:rgba(255,255,255,0.45);margin-bottom:20px;font-size:14px">Введите ключ роли (ROLE-...) или ключ префикса (PFX-...).</p>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <input type="text" class="input-field" id="key-input" placeholder="ROLE-XXXX-XXXX-XXXX-XXXX" style="text-transform:uppercase;letter-spacing:1px;font-family:monospace"/>
+          <button class="btn-primary" onclick="activateKey()">Активировать</button>
+          <p id="key-activate-msg" style="font-size:14px;display:none"></p>
+        </div>
+      </div>
+    </div>
+
     <div id="tab-shop" class="tab-content" style="display:none">
       <h1 class="dash-title">Магазин</h1>
       <div id="shop-grid" style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start"></div>
@@ -121,7 +137,7 @@
       <h1 class="dash-title">Скачать клиент</h1>
       <div class="glass-card" style="max-width:600px">
         <div style="padding:20px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:14px;margin-bottom:28px">
-          <p style="font-size:14px;line-height:1.8;color:rgba(255,255,255,0.7)">NoryxDLC — Мультисерверный клиент, при его скачивании, вы берёте всю ответственность на себя. Мы не несём ответственность за ваш аккаунт, мы помогаем только с нашим клиентом, с другими — нет. Наша поддержка: <a href="https://t.me/NoryxSupport" target="_blank" style="color:var(--primary)">@NoryxSupport</a></p>
+          <p style="font-size:14px;line-height:1.8;color:rgba(255,255,255,0.7)">NoryxDLC — Мультисерверный клиент, при его скачивании, вы берёте всю ответственность на себя. Мы не несём ответственность за ваш аккаунт, мы помогаем только с нашим клиентом, с другими — нет. Наша поддержка: <a href="https://t.me/NoryxSupport" target="_blank" style="color:var(--primary)">@NoryxSupport: https://workupload.com/file/vDZZxgqMuCy</a></p>
         </div>
         <div style="display:flex;flex-direction:column;gap:14px" id="download-buttons"></div>
       </div>
@@ -236,9 +252,9 @@ function renderDownloadButtons(user) {
   wrap.innerHTML = '';
   if (hasAlpha) {
     var a2 = document.createElement('a');
-    a2.href = '#'; a2.className = 'btn-primary'; a2.target = '_blank';
+    a2.href = 'https://workupload.com/file/vDZZxgqMuCy'; a2.className = 'btn-primary'; a2.target = '_blank';
     a2.style.cssText = 'text-align:center';
-    a2.textContent = '⬇ Скачать Alpha';
+    a2.textContent = '⬇ https://workupload.com/file/vDZZxgqMuCy';
     wrap.appendChild(a2);
   }
   if (!hasAlpha) {
