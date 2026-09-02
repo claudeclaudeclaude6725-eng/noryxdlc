@@ -482,10 +482,10 @@ async function handleApi(req, res, pathname, body) {
     try {
       if (keyUp.startsWith('ROLE-')) {
         var r = await db('SELECT * FROM role_keys WHERE key=$1 AND used=FALSE LIMIT 1',[keyUp]);
-        if (!r.rows.length) return send(res, 404, { error: 'Ключ не найден или использован' });
+        if (!r.rows.length) return send(res, 404, { error: 'Ключ не найден или использован', debugReceived: keyUp, debugLength: keyUp.length });
         var k = r.rows[0];
         var exAt = null;
-        var dm = { '7D':7,'30D':30,'90D':90,'180D':180 };
+        var dm = { '3D':3,'7D':7,'30D':30,'90D':90,'180D':180 };
         if (k.duration !== 'LIFETIME') exAt = new Date(Date.now()+(dm[k.duration]||30)*864e5);
         await db('UPDATE role_keys SET used=TRUE,used_by=$1,used_at=NOW() WHERE id=$2',[sess.user.id,k.id]);
         await db('UPDATE users SET role=$1,subscription_type=$1,subscription_expires_at=$2 WHERE id=$3',[k.role_name.toLowerCase(),exAt,sess.user.id]);
