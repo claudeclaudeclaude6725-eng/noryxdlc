@@ -28,6 +28,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
       Промокоды
     </button>
+    <button class="sidebar-item" onclick="adminTab('keys',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+      Создание ключей
+    </button>
     <button class="sidebar-item" onclick="adminTab('give-media',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
       Выдать MEDIA
@@ -43,6 +47,14 @@
     <button class="sidebar-item" onclick="adminTab('withdrawals',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       Выводы MEDIA
+    </button>
+    <button class="sidebar-item" onclick="adminTab('balance-keys',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/><circle cx="12" cy="12" r="10" opacity="0.3"/></svg>
+      Баланс ключи
+    </button>
+    <button class="sidebar-item" onclick="adminTab('check-scripts',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+      Проверить скрипты
     </button>
     <div class="sidebar-spacer"></div>
     <a href="/html/profile.html" class="sidebar-item" style="color:rgba(255,255,255,0.35)">
@@ -82,6 +94,96 @@
             <button class="btn-primary" onclick="createPromo()">Создать</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div id="atab-keys" class="admin-tab" style="display:none">
+      <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+
+        <div class="glass-card" style="flex:1;min-width:300px">
+          <h3 class="admin-card-title">Ключ для роли</h3>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div>
+              <label class="admin-label">Роль</label>
+              <select class="input-field" id="role-name">
+                <option value="beta">⭐ Beta</option>
+                <option value="alpha">💎 Alpha</option>
+                <option value="vip">👑 VIP</option>
+                <option value="media">🎥 MEDIA</option>
+                <option value="moderator">🛡️ Модератор</option>
+              </select>
+            </div>
+            <div>
+              <label class="admin-label">Цвет роли</label>
+              <select class="input-field" id="role-color">
+                <option value="pink">🌸 Розовый</option>
+                <option value="red">🔴 Красный</option>
+                <option value="purple">🟣 Фиолетовый</option>
+                <option value="green">🟢 Зелёный</option>
+                <option value="gray">⚫ Серый</option>
+                <option value="blue">🔵 Синий</option>
+                <option value="black">⬛ Чёрный</option>
+                <option value="white">⬜ Белый</option>
+              </select>
+            </div>
+            <div>
+              <label class="admin-label">Срок</label>
+              <select class="input-field" id="role-duration">
+                <option value="7D">7 дней</option>
+                <option value="30D">30 дней</option>
+                <option value="90D">90 дней</option>
+                <option value="180D">180 дней</option>
+                <option value="LIFETIME">Навсегда</option>
+              </select>
+            </div>
+            <p id="role-key-err" style="font-size:13px;display:none"></p>
+            <button class="btn-primary" onclick="createRoleKey()">Создать</button>
+            <div id="role-key-result" style="display:none">
+              <label class="admin-label">Ключ (виден 5 мин):</label>
+              <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+                <code class="key-display" id="role-key-output"></code>
+                <button class="btn-secondary" style="padding:8px 14px;font-size:13px;flex-shrink:0" onclick="copyKey('role-key-output')">Копировать</button>
+              </div>
+              <p id="role-key-output-copy-msg" style="font-size:12px;color:var(--success);display:none;margin-top:4px">✓ Скопировано!</p>
+            </div>
+          </div>
+          <div style="margin-top:28px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.08)">
+            <h4 style="font-size:14px;color:rgba(255,255,255,0.4);margin-bottom:14px">Созданные ключи ролей</h4>
+            <div id="role-keys-list"><p style="color:rgba(255,255,255,0.3);font-size:13px">Загрузка...</p></div>
+          </div>
+        </div>
+
+        <div class="glass-card" style="flex:1;min-width:300px">
+          <h3 class="admin-card-title">Ключ для префикса</h3>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div>
+              <label class="admin-label">Текст префикса</label>
+              <input class="input-field" id="prefix-text" placeholder="Например: NoryxDLC"/>
+            </div>
+            <div>
+              <label class="admin-label">Цвет префикса</label>
+              <div style="display:flex;gap:10px;align-items:center">
+                <input type="color" id="prefix-color" value="#7C3AED" style="width:48px;height:42px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:none;cursor:pointer;padding:2px"/>
+                <span id="prefix-color-label" style="font-size:14px;color:rgba(255,255,255,0.5)">#7C3AED</span>
+              </div>
+            </div>
+            <p id="prefix-key-err" style="font-size:13px;display:none"></p>
+            <button class="btn-primary" onclick="createPrefixKey()">Создать</button>
+            <div id="prefix-key-result" style="display:none">
+              <label class="admin-label">Ключ (виден 5 мин):</label>
+              <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+                <code class="key-display" id="prefix-key-output"></code>
+                <button class="btn-secondary" style="padding:8px 14px;font-size:13px;flex-shrink:0" onclick="copyKey('prefix-key-output')">Копировать</button>
+              </div>
+              <p id="prefix-key-output-copy-msg" style="font-size:12px;color:var(--success);display:none;margin-top:4px">✓ Скопировано!</p>
+            </div>
+          </div>
+          <div style="margin-top:28px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.08)">
+            <h4 style="font-size:14px;color:rgba(255,255,255,0.4);margin-bottom:14px">Созданные ключи префиксов</h4>
+            <div id="prefix-keys-list"><p style="color:rgba(255,255,255,0.3);font-size:13px">Загрузка...</p></div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -154,6 +256,41 @@
       </div>
     </div>
 
+    <div id="atab-balance-keys" class="admin-tab" style="display:none">
+      <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+        <div class="glass-card" style="flex:1;min-width:280px">
+          <h3 class="admin-card-title">Создать ключ баланса ($)</h3>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div>
+              <label class="admin-label">Сумма ($, только цифры)</label>
+              <input class="input-field" id="balance-amount" type="text" inputmode="numeric" placeholder="Например: 100" oninput="this.value=this.value.replace(/[^0-9]/g,'')"/>
+            </div>
+            <p id="balance-key-err" style="font-size:13px;display:none"></p>
+            <button class="btn-primary" onclick="createBalanceKey()">Создать</button>
+            <div id="balance-key-result" style="display:none">
+              <label class="admin-label">Ключ (виден 5 мин):</label>
+              <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+                <code class="key-display" id="balance-key-output"></code>
+                <button class="btn-secondary" style="padding:8px 14px;font-size:13px;flex-shrink:0" onclick="copyKey('balance-key-output')">Копировать</button>
+              </div>
+              <p id="balance-key-output-copy-msg" style="font-size:12px;color:var(--success);display:none;margin-top:4px">✓ Скопировано!</p>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card" style="flex:1;min-width:280px">
+          <h3 class="admin-card-title">Созданные ключи баланса</h3>
+          <div id="balance-keys-list"><p style="color:rgba(255,255,255,0.3);font-size:13px">Загрузка...</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="atab-check-scripts" class="admin-tab" style="display:none">
+      <div class="glass-card">
+        <h3 class="admin-card-title">Проверка скриптов</h3>
+        <div id="pending-scripts-list"><p style="color:rgba(255,255,255,0.3);font-size:14px">Загрузка...</p></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -177,11 +314,33 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="script-check-modal">
+  <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto">
+    <button class="modal-close" onclick="closeScriptCheck()">✕</button>
+    <h2 id="sc-title" style="font-size:22px;margin-bottom:4px"></h2>
+    <p style="color:rgba(255,255,255,0.4);font-size:13px;margin-bottom:16px" id="sc-author"></p>
+    <img id="sc-preview" style="width:100%;max-height:300px;object-fit:cover;border-radius:14px;margin-bottom:16px;display:none"/>
+    <p style="color:rgba(255,255,255,0.7);line-height:1.6;white-space:pre-wrap" id="sc-desc"></p>
+    <p style="margin-top:16px;font-size:18px;font-weight:700;color:var(--success)" id="sc-price"></p>
+    <p style="margin-top:8px;font-size:13px;color:rgba(255,255,255,0.5)" id="sc-file"></p>
+    <div style="display:flex;gap:12px;margin-top:24px">
+      <button class="btn-primary" style="flex:1" onclick="approveScript()">Подтвердить</button>
+      <button class="btn-danger" style="flex:1" onclick="rejectScript()">Отклонить</button>
+    </div>
+    <p id="sc-err" style="font-size:13px;margin-top:12px;display:none"></p>
+  </div>
+</div>
+
 <script src="/js/admin.js"></script>
 <script>
+document.getElementById('prefix-color').addEventListener('input', function() {
+  document.getElementById('prefix-color-label').textContent = this.value;
+});
 document.getElementById('media-card-modal').addEventListener('click', function(e) {
   if (e.target === this) closeMediaCard();
 });
+var scm=document.getElementById('script-check-modal');
+if(scm) scm.addEventListener('click', function(e){ if(e.target===this) closeScriptCheck(); });
 </script>
 </body>
 </html>
