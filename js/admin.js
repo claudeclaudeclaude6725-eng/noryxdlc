@@ -42,6 +42,7 @@ async function checkAdminAccess() {
   } catch(e) { window.location.href = '/html/profile.html'; }
 }
 
+var currentCheckScriptId = null;
 function adminTab(name, btn) {
   document.querySelectorAll('.admin-tab').forEach(function(el) { el.style.display = 'none'; });
   document.querySelectorAll('.sidebar-item').forEach(function(el) { el.classList.remove('active'); });
@@ -49,16 +50,20 @@ function adminTab(name, btn) {
   if (tab) tab.style.display = '';
   if (btn) btn.classList.add('active');
   var titles = {
-    users:'Пользователи', promos:'Промокоды',
+    users:'Пользователи', promos:'Промокоды', keys:'Создание ключей',
     media:'Управление MEDIA', ban:'Заблокировать юзера',
-    'give-media':'Выдать MEDIA', withdrawals:'Выводы MEDIA'
+    'give-media':'Выдать MEDIA', withdrawals:'Выводы MEDIA',
+    'balance-keys':'Баланс ключи ($)', 'check-scripts':'Проверить скрипты'
   };
   setText('admin-title', titles[name] || name);
   if (name === 'users') loadUsers(adminCurrentPage.users);
   if (name === 'promos') loadPromos();
+  if (name === 'keys') { loadRoleKeys(); loadPrefixKeys(); }
   if (name === 'media') loadMedia(adminCurrentPage.media);
   if (name === 'ban') loadBanned();
   if (name === 'withdrawals') loadWithdrawals();
+  if (name === 'balance-keys') loadBalanceKeys();
+  if (name === 'check-scripts') loadPendingScripts();
 }
 
 async function loadUsers(page) {
@@ -76,7 +81,7 @@ function renderUsers(users, total, page, limit) {
   if (!users.length) {
     tbody.innerHTML = '<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.3)">Нет пользователей</div>';
   } else {
-    var ROLE_COLORS = { admin:'#EF4444', media:'#A855F7', moderator:'#3B82F6', vip:'#F59E0B', alpha:'#7C3AED', user:'#6B7280' };
+    var ROLE_COLORS = { admin:'#EF4444', media:'#A855F7', moderator:'#3B82F6', vip:'#F59E0B', alpha:'#7C3AED', beta:'#F59E0B', user:'#6B7280' };
     tbody.innerHTML = '';
     users.forEach(function(u) {
       var rColor = ROLE_COLORS[u.role] || '#6B7280';
@@ -159,6 +164,86 @@ async function createPromo() {
     document.getElementById('promo-owner').value = '';
     loadPromos();
   } catch(e) { showEl(errEl, 'Ошибка сети', '#EF4444'); }
+}
+
+async function createRoleKey() {
+  var roleName  = (document.getElementById('role-name').value || '').trim();
+  var roleColor = document.getElementById('role-color').value || '';
+  var duration  = document.getElementById('role-duration').value || '';
+  var errEl = document.getElementById('role-key-err');
+  var resEl = document.getElementById('role-key-result');
+  if (!roleName || !duration) { showEl(errEl, 'Заполните все поля', '#EF4444'); resEl.style.display='none'; return; }
+  try {
+    var r = await fetch('/api/admin/role-keys/create', {
+      method: 'POST', credentials: 'include',
+      headers: csrfHeaders(),
+      body: JSON.stringify({ roleName, roleColor, duration })
+    });
+    var data = await r.json();
+    if (!r.ok) { showEl(errEl, data.error, '#EF4444'); resEl.style.display='none'; return; }
+    errEl.style.display = 'none';
+    document.getElementById('role-key-output').textContent = data.key;
+    resEl.style.display = 'block';
+    loadRoleKeys();
+    setTimeout(function() { resEl.style.display = 'none'; }, 5 * 60 * 1000);
+  } catch(e) { showEl(errEl, 'Ошибка сети', '#EF4444'); }
+}
+
+async function createPrefixKey() {
+  var prefixText  = (document.getElementById('prefix-text').value || '').trim();
+  var prefixColor = document.getElementById('prefix-color').value || '#ffffff';
+  var errEl = document.getElementById('prefix-key-err');
+  var resEl = document.getElementById('prefix-key-result');
+  if (!prefixText) { showEl(errEl, 'Введите текст префикса', '#EF4444'); resEl.style.display='none'; return; }
+  try {
+    var r = await fetch('/api/admin/prefix-keys/create', {
+      method: 'POST', credentials: 'include',
+      headers: csrfHeaders(),
+      body: JSON.stringify({ prefixText, prefixColor })
+    });
+    var data = await r.json();
+    if (!r.ok) { showEl(errEl, data.error, '#EF4444'); resEl.style.display='none'; return; }
+    errEl.style.display = 'none';
+    document.getElementById('prefix-key-output').textContent = data.key;
+    resEl.style.display = 'block';
+    loadPrefixKeys();
+    setTimeout(function() { resEl.style.display = 'none'; }, 5 * 60 * 1000);
+  } catch(e) { showEl(errEl, 'Ошибка сети', '#EF4444'); }
+}
+
+async function loadRoleKeys() {
+  try {
+    var r = await fetch('/api/admin/role-keys', { credentials: 'include' });
+    var data = await r.json();
+    renderKeyList('role-keys-list', data.keys || []);
+  } catch(e) {}
+}
+
+async function loadPrefixKeys() {
+  try {
+    var r = await fetch('/api/admin/prefix-keys', { credentials: 'include' });
+    var data = await r.json();
+    renderKeyList('prefix-keys-list', data.keys || []);
+  } catch(e) {}
+}
+
+function renderKeyList(id, keys) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  if (!keys.length) { el.innerHTML = '<p style="color:rgba(255,255,255,0.3);font-size:13px">Ключей нет</p>'; return; }
+  el.innerHTML = '';
+  keys.forEach(function(k) {
+    var div = document.createElement('div');
+    div.style.cssText = 'padding:10px 14px;border:1px solid rgba(255,255,255,0.08);border-radius:10px;margin-bottom:8px';
+    var usedColor = k.used ? '#EF4444' : 'var(--success)';
+    div.innerHTML =
+      '<code style="font-size:12px;letter-spacing:1px;color:#fff;word-break:break-all">' + esc(k.key) + '</code>' +
+      '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px">' +
+        (k.role_name ? 'Роль: <b style="color:#fff">' + esc(k.role_name) + '</b> | Срок: ' + esc(k.duration) : 'Префикс: <b style="color:#fff">' + esc(k.prefix_text || '') + '</b>') +
+        ' | <span style="color:' + usedColor + '">' + (k.used ? 'Использован' : 'Активен') + '</span>' +
+      '</div>';
+    el.appendChild(div);
+  });
 }
 
 async function giveMedia() {
@@ -379,6 +464,114 @@ async function sendReject(id) {
     });
     if (r.ok) loadWithdrawals();
   } catch(e) { alert('Ошибка'); }
+}
+
+function copyKey(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(function() {
+    var msg = document.getElementById(id + '-copy-msg');
+    if (msg) { msg.style.display = 'block'; setTimeout(function() { msg.style.display = 'none'; }, 2000); }
+  });
+}
+
+async function createBalanceKey(){
+  var amount = (document.getElementById('balance-amount').value||'').trim();
+  var errEl=document.getElementById('balance-key-err');
+  var resEl=document.getElementById('balance-key-result');
+  if(!amount || !/^\d+$/.test(amount)){ showEl(errEl,'Введите цифры',' #EF4444'); if(resEl) resEl.style.display='none'; return; }
+  try{
+    var r=await fetch('/api/admin/balance-keys/create',{method:'POST', credentials:'include', headers: csrfHeaders(), body: JSON.stringify({amount: parseInt(amount,10)})});
+    var data=await r.json();
+    if(!r.ok){ showEl(errEl,data.error,'#EF4444'); if(resEl) resEl.style.display='none'; return; }
+    errEl.style.display='none';
+    document.getElementById('balance-key-output').textContent=data.key;
+    resEl.style.display='block';
+    loadBalanceKeys();
+    setTimeout(function(){ resEl.style.display='none'; }, 5*60*1000);
+  }catch(e){ showEl(errEl,'Ошибка сети','#EF4444'); }
+}
+async function loadBalanceKeys(){
+  try{
+    var r=await fetch('/api/admin/balance-keys',{credentials:'include'});
+    var data=await r.json();
+    renderBalanceKeys(data.keys||[]);
+  }catch(e){}
+}
+function renderBalanceKeys(keys){
+  var el=document.getElementById('balance-keys-list');
+  if(!el) return;
+  if(!keys.length){ el.innerHTML='<p style="color:rgba(255,255,255,0.3);font-size:13px">Ключей нет</p>'; return; }
+  el.innerHTML='';
+  keys.forEach(function(k){
+    var div=document.createElement('div');
+    div.style.cssText='padding:10px 14px;border:1px solid rgba(255,255,255,0.08);border-radius:10px;margin-bottom:8px';
+    var usedColor=k.used?'#EF4444':'var(--success)';
+    div.innerHTML='<code style="font-size:12px;letter-spacing:1px;color:#fff;word-break:break-all">'+esc(k.key)+'</code><div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px">Сумма: <b style="color:#fff">'+k.amount+' $</b> | <span style="color:'+usedColor+'">'+(k.used?'Использован':'Активен')+'</span></div>';
+    el.appendChild(div);
+  });
+}
+async function loadPendingScripts(){
+  var el=document.getElementById('pending-scripts-list');
+  if(el) el.innerHTML='<p style="color:rgba(255,255,255,0.3)">Загрузка...</p>';
+  try{
+    var r=await fetch('/api/admin/scripts/pending',{credentials:'include'});
+    var data=await r.json();
+    renderPendingScripts(data.scripts||[]);
+  }catch(e){ if(el) el.innerHTML='<p style="color:#EF4444">Ошибка</p>'; }
+}
+function renderPendingScripts(list){
+  var el=document.getElementById('pending-scripts-list');
+  if(!el) return;
+  if(!list.length){ el.innerHTML='<p style="color:rgba(255,255,255,0.3)">Нет скриптов на проверку</p>'; return; }
+  el.innerHTML='';
+  list.forEach(function(s){
+    var div=document.createElement('div');
+    div.style.cssText='padding:16px;border:1px solid rgba(255,255,255,0.1);border-radius:14px;margin-bottom:12px;cursor:pointer;transition:border-color 0.2s';
+    div.innerHTML='<div style="font-size:12px;color:rgba(255,255,255,0.4)">Юзер - '+esc(s.author_username)+'</div><div style="font-weight:700;color:#fff;margin-top:4px">'+esc(s.title)+' <span style="font-weight:400;color:var(--success);margin-left:8px">'+(s.is_free?'Бесплатно': s.price+' $')+'</span></div><div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:6px">'+esc((s.description||'').slice(0,100))+'</div><div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:6px">Файл: '+esc(s.file_name)+' • '+(s.file_size/1024).toFixed(1)+' KB</div>';
+    div.onclick=function(){ openScriptCheck(s); };
+    el.appendChild(div);
+  });
+}
+function openScriptCheck(s){
+  currentCheckScriptId=s.id;
+  setText('sc-title', s.title);
+  setText('sc-author','Юзер - '+s.author_username);
+  setText('sc-desc', s.description);
+  setText('sc-price', s.is_free ? 'Бесплатно' : s.price+' $');
+  setText('sc-file', 'Файл: '+s.file_name+' • '+(s.file_size/1024).toFixed(1)+' KB • '+(s.file_ext||''));
+  var img=document.getElementById('sc-preview');
+  if(s.preview_image){ img.src=s.preview_image; img.style.display='block'; } else img.style.display='none';
+  document.getElementById('sc-err').style.display='none';
+  document.getElementById('script-check-modal').classList.remove('hidden');
+}
+function closeScriptCheck(){
+  var m=document.getElementById('script-check-modal');
+  if(m) m.classList.add('hidden');
+  currentCheckScriptId=null;
+}
+async function approveScript(){
+  if(!currentCheckScriptId) return;
+  var err=document.getElementById('sc-err');
+  try{
+    var r=await fetch('/api/admin/scripts/'+currentCheckScriptId+'/approve',{method:'POST', credentials:'include', headers: csrfHeaders()});
+    var data=await r.json();
+    if(!r.ok){ showEl(err,data.error,'#EF4444'); return; }
+    closeScriptCheck();
+    loadPendingScripts();
+  }catch(e){ showEl(err,'Ошибка сети','#EF4444'); }
+}
+async function rejectScript(){
+  if(!currentCheckScriptId) return;
+  var reason=prompt('Причина отклонения (можно пусто):')||'';
+  var err=document.getElementById('sc-err');
+  try{
+    var r=await fetch('/api/admin/scripts/'+currentCheckScriptId+'/reject',{method:'POST', credentials:'include', headers: csrfHeaders(), body: JSON.stringify({reason})});
+    var data=await r.json();
+    if(!r.ok){ showEl(err,data.error,'#EF4444'); return; }
+    closeScriptCheck();
+    loadPendingScripts();
+  }catch(e){ showEl(err,'Ошибка сети','#EF4444'); }
 }
 
 function showEl(el, text, color) {
