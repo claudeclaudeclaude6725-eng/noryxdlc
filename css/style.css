@@ -537,6 +537,7 @@ section { position: relative; }
 }
 .tariff-category { text-align: center; }
 .tariff-category-title { font-size: 28px; font-weight: 800; margin-bottom: 24px; letter-spacing: 1px; }
+.tariff-category-title.beta { color: #f59e0b; text-shadow: 0 0 20px rgba(245,158,11,0.3); }
 .tariff-category-title.alpha { color: var(--primary); text-shadow: 0 0 20px rgba(124,58,237,0.3); }
 .tariff-category-title.other { color: #6B7280; }
 .tariff-items { display: flex; flex-direction: column; gap: 12px; }
@@ -574,6 +575,7 @@ section { position: relative; }
 .tariff-item-name { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.9); }
 .tariff-item-price { font-size: 18px; font-weight: 700; color: #fff; }
 .tariff-item-sub { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+.beta-price { color: #f59e0b !important; }
 .alpha-price { color: var(--primary) !important; }
 .other-price { color: #9CA3AF !important; }
 .tariff-item.lifetime {
@@ -1190,6 +1192,20 @@ td { padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); color:
   font-weight: 500;
 }
 
+.key-display {
+  flex: 1;
+  display: block;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: var(--success);
+  word-break: break-all;
+  font-family: 'Courier New', monospace;
+}
+
 .pagination-wrap {
   display: flex;
   align-items: center;
@@ -1453,10 +1469,26 @@ td { padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); color:
 }
 .policy-link:hover { color: var(--success); }
 
+.scripts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+.script-card {
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+.script-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+}
+.script-card img { transition: transform 0.3s; }
+.script-card:hover img { transform: scale(1.03); }
+
 @media (max-width: 640px) {
   .policy-hero { padding: 140px 20px 32px; }
   .policy-back { position: static; display: inline-flex; margin-bottom: 24px; }
   .policy-hero h1 { font-size: 32px; }
   .policy-panel-inner { padding: 0 20px 20px 20px; }
   .policy-tab-btn { padding: 16px 18px; }
+  .scripts-grid { grid-template-columns: 1fr; }
 }
